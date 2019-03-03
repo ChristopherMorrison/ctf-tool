@@ -135,15 +135,15 @@ def main():
             else:
                 shutil.copy2(s, d)
 
-    def setup_listener(requires_server_path, challenge_zip_path, port, crontab_path, username):
+    def setup_listener(requires_server_path, server_zip_path, port, crontab_path, username):
         """sets up listeners"""
-        if challenge_zip_path is not None:
-            zip_ref = zipfile.ZipFile(challenge_zip_path, "r")
-            unzipped_challenge_dir = os.path.join(os.path.abspath(os.path.dirname(challenge_zip_path)), "challenge")
-            zip_ref.extractall(unzipped_challenge_dir)
+        if server_zip_path is not None:
+            zip_ref = zipfile.ZipFile(server_zip_path, "r")
+            unzipped_server_dir = os.path.join(os.path.abspath(os.path.dirname(server_zip_path)), "challenge")
+            zip_ref.extractall(unzipped_server_dir)
             zip_ref.close()
-            copytree(unzipped_challenge_dir, os.path.split(challenge_zip_path)[0])
-            shutil.rmtree(unzipped_challenge_dir, ignore_errors=True)
+            copytree(unzipped_server_dir, os.path.split(server_zip_path)[0])
+            shutil.rmtree(unzipped_server_dir, ignore_errors=True)
 
         with open(requires_server_path, "r") as f:
             requires_server_string = f.readline()
@@ -175,7 +175,7 @@ def main():
         os.chmod(crontab_path, 0o600)
 
     def install_cron_reboot_persist():
-        reboot_persist_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "scripts","reboot_persist.sh")
+        reboot_persist_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "scripts", "reboot_persist.sh")
 
         shutil.copy2(reboot_persist_path, "/usr/local/bin/")
         new_reboot_persist_path = os.path.join("/usr/local/bin/", "reboot_persist.sh")
@@ -191,67 +191,68 @@ def main():
         new_listener_path = os.path.join("/usr/local/bin/", "challenge-listener.py")
         os.chmod(new_listener_path, 0o755)
 
+    def is_server_required(path):
+        requires_server_path = None
+        # find out if user accounts must be made or not
+        for root, dirs, files in os.walk(path):
+            for item in files:
+                if item == "requires-server":
+                    requires_server_path = os.path.join(root, item)
+                    break
+            if requires_server_path is not None:
+                break
+        return requires_server_path
+
     # Add users to local machine (setup challenge host)
     if args.install == True:
         install_listener_script()
         install_cron_reboot_persist()
         for challenge in challenges:
-            username = force_valid_username(challenge.name)
-            challenge_path = challenge.directory
-            new_user_home = os.path.join("/home/", username)
-            try:
-                os.system("useradd -m {:s}".format(username))
-            except Exception as err:
-                print("Unable to add user: {:s}".format(username))
-                exit(1)
+            challenge.requires_server_path = is_server_required(challenge.directory)
 
-            crontab_path = os.path.join("/var/spool/cron/crontabs", username)
-            # copy everything to new user's home dir
-            # TODO: We should probably only copy a smaller zip to the user's home then run some predefined script per challenge
-            copytree(challenge_path, new_user_home)
+            if challenge.requires_server_path is not None:
+                challenge.username = force_valid_username(challenge.name)
+                new_user_home = os.path.join("/home/", challenge.username)
+                os.system("useradd -m {:s}".format(challenge.username))
 
-            shutil.chown(new_user_home, user="root", group="root")
-            # change file permissions recursively and locate important files
-            requires_server_path = None
-            challenge_zip_path = None
-            server_zip_path = None
-            # NOTE: {chris->clif} Could we not have just used an os.system("chmod -r ///") call then changed the flag back?, also shouldn't we delay this call until we've finished moving files
-            for root, dirs, files in os.walk(new_user_home):
-                for item in dirs:
-                    dir_path = os.path.join(root, item)
-                    shutil.chown(dir_path, user="root", group="root")
-                    os.chmod(dir_path, 0o050)
-                for item in files:
-                    file_path = os.path.join(root, item)
-                    shutil.chown(file_path, user="root", group=username)
-                    os.chmod(file_path, 0o040)
-                    # only looking for challenge.zip here in case a challenge is a malformed zip file
-                    if os.path.split(file_path)[1] == "requires-server":
-                        requires_server_path = file_path
-                    if os.path.split(file_path)[1] == "challenge.zip":
-                        challenge_zip_path = file_path
-                    if os.path.split(file_path)[1] == "server.zip":
-                        server_zip_path = file_path
-                    if os.path.split(file_path)[1] == "flag.txt" or os.path.split(file_path)[1] == "flag":
-                        shutil.chown(file_path, user="root", group=username)
+                # copy everything to new user's home dir
+                # TODO: We should probably only copy a smaller zip to the user's home then run some predefined script per challenge
+                copytree(challenge.directory, new_user_home)
+
+                shutil.chown(new_user_home, user="root", group="root")
+                # change file permissions recursively and locate important files
+
+                server_zip_path = None
+                # NOTE: {chris->clif} Could we not have just used an os.system("chmod -r ///") call then changed the flag back?, also shouldn't we delay this call until we've finished moving files
+                for root, dirs, files in os.walk(new_user_home):
+                    for item in dirs:
+                        dir_path = os.path.join(root, item)
+                        shutil.chown(dir_path, user="root", group="root")
+                        os.chmod(dir_path, 0o050)
+                    for item in files:
+                        file_path = os.path.join(root, item)
+                        shutil.chown(file_path, user="root", group=challenge.username)
                         os.chmod(file_path, 0o040)
+                        if item == "requires-server":
+                            challenge.requires_server_path = file_path
+                        if item == "server.zip":
+                            challenge.server_zip_path = file_path
+                        if item == "flag.txt" or item == "flag":
+                            shutil.chown(file_path, user="root", group=challenge.username)
+                            os.chmod(file_path, 0o040)
 
-            if requires_server_path is not None:
-                if server_zip_path is not None:
-                    challenge_zip_path = server_zip_path
+                crontab_path = os.path.join("/var/spool/cron/crontabs", challenge.username)
                 try:
-                    setup_listener(requires_server_path, challenge_zip_path, challenge.port, crontab_path, username)
-                    with open("challenge_ports", "w+") as f:
-                        f.write(f"{username} : {challenge.port}")
+                    setup_listener(challenge.requires_server_path, challenge.server_zip_path, challenge.port, challenge.crontab_path, challenge.username)
                     challenge.description += f"\n\nnc {args.address[0]} {challenge.port}"
                 except EmptyConfigFileError as err:
-                    print(f"\n\nThe requires-server file for the challenge: {username} is empty, "
+                    print(f"\n\nThe requires-server file for the challenge: {challenge.username} is empty, "
                           f"skipping listener setup for that challenge")
-                    required_vars = {"requires_server_path": requires_server_path,
-                                     "challenge_zip_path": challenge_zip_path,
+                    required_vars = {"requires_server_path": challenge.requires_server_path,
+                                     "server_zip_path": challenge.server_zip_path,
                                      "port": challenge.port,
-                                     "crontab_path": crontab_path,
-                                     "username": username}
+                                     "crontab_path": challenge.crontab_path,
+                                     "username": challenge.username}
                     print("If you would like to attempt this process when the file contains a valid command, use the "
                           f"following dict: {required_vars}\n\n")
                     continue
