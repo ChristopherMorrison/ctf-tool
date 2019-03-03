@@ -256,7 +256,7 @@ def main():
                         exit(1)
                 try:
                     setup_listener(**required_vars)
-                    challenge.description += f"\n\nnc {args.address[0]} {challenge.port}"
+                    challenge.description += f"\n\nnc {args.address} {challenge.port}"
                 except EmptyConfigFileError as err:
                     print(f"\n\nThe requires-server file for the challenge: {challenge.username} is empty, "
                           f"skipping listener setup for that challenge")
