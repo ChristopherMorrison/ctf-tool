@@ -220,11 +220,11 @@ def main():
                 for item in dirs:
                     dir_path = os.path.join(root, item)
                     shutil.chown(dir_path, user="root", group="root")
-                    os.chmod(dir_path, 0o005)
+                    os.chmod(dir_path, 0o050)
                 for item in files:
                     file_path = os.path.join(root, item)
                     shutil.chown(file_path, user="root", group=username)
-                    os.chmod(file_path, 0o005)
+                    os.chmod(file_path, 0o040)
                     # only looking for challenge.zip here in case a challenge is a malformed zip file
                     if os.path.split(file_path)[1] == "requires-server":
                         requires_server_path = file_path
@@ -234,7 +234,7 @@ def main():
                         server_zip_path = file_path
                     if os.path.split(file_path)[1] == "flag.txt" or os.path.split(file_path)[1] == "flag":
                         shutil.chown(file_path, user="root", group=username)
-                        os.chmod(file_path, 0o005)
+                        os.chmod(file_path, 0o040)
 
             if requires_server_path is not None:
                 if server_zip_path is not None:
