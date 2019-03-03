@@ -24,8 +24,8 @@ class Challenge(object):
         # Challenge
         self.id = None
         self.name = os.path.basename(abs_directory)
-        self.description = contents_of(os.path.join(abs_directory,'message.txt')).strip()
-        self.max_attempts = 0
+        self.description = contents_of(os.path.join(abs_directory, 'message.txt')).strip()
+        self.max_attempts = int(contents_of(os.path.join(abs_directory, "max-attempts")) if os.path.exists(abs_directory,"max-attempts") else 0
         self.value = int(contents_of(os.path.join(abs_directory, 'value.txt')))
         self.category = os.path.basename(os.path.dirname(abs_directory))
         self.type = 'standard'
