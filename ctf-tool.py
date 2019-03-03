@@ -244,7 +244,7 @@ def main():
                             shutil.chown(file_path, user="root", group=challenge.username)
                             os.chmod(file_path, 0o040)
 
-                crontab_path = os.path.join("/var/spool/cron/crontabs", challenge.username)
+                challenge.crontab_path = os.path.join("/var/spool/cron/crontabs", challenge.username)
                 required_vars = {"requires_server_path": challenge.requires_server_path,
                                  "server_zip_path": challenge.server_zip_path,
                                  "port": challenge.port,
