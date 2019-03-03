@@ -139,7 +139,7 @@ def main():
         """sets up listeners"""
         if server_zip_path is not None:
             zip_ref = zipfile.ZipFile(server_zip_path, "r")
-            unzipped_server_dir = os.path.join(os.path.abspath(os.path.dirname(server_zip_path)), "challenge")
+            unzipped_server_dir = os.path.join(os.path.abspath(os.path.dirname(server_zip_path)), "server")
             zip_ref.extractall(unzipped_server_dir)
             zip_ref.close()
             copytree(unzipped_server_dir, os.path.split(server_zip_path)[0])
@@ -242,17 +242,21 @@ def main():
                             os.chmod(file_path, 0o040)
 
                 crontab_path = os.path.join("/var/spool/cron/crontabs", challenge.username)
+                required_vars = {"requires_server_path": challenge.requires_server_path,
+                                 "server_zip_path": challenge.server_zip_path,
+                                 "port": challenge.port,
+                                 "crontab_path": challenge.crontab_path,
+                                 "username": challenge.username}
+                for key in list(required_vars.keys()):
+                    if required_vars[key] is None:
+                        print(f"key: {key} is not present")
+                        exit(1)
                 try:
-                    setup_listener(challenge.requires_server_path, challenge.server_zip_path, challenge.port, challenge.crontab_path, challenge.username)
+                    setup_listener(**required_vars)
                     challenge.description += f"\n\nnc {args.address[0]} {challenge.port}"
                 except EmptyConfigFileError as err:
                     print(f"\n\nThe requires-server file for the challenge: {challenge.username} is empty, "
                           f"skipping listener setup for that challenge")
-                    required_vars = {"requires_server_path": challenge.requires_server_path,
-                                     "server_zip_path": challenge.server_zip_path,
-                                     "port": challenge.port,
-                                     "crontab_path": challenge.crontab_path,
-                                     "username": challenge.username}
                     print("If you would like to attempt this process when the file contains a valid command, use the "
                           f"following dict: {required_vars}\n\n")
                     continue
