@@ -10,8 +10,8 @@ import zipfile
 import time
 import tempfile
 
-from validate import validate_ctf_directory
-from challenge import Challenge
+from src.validate import validate_ctf_directory
+from src.challenge import Challenge
 
 class EmptyConfigFileError(Exception):
     pass
@@ -175,7 +175,7 @@ def main():
         os.chmod(crontab_path, 0o600)
 
     def install_cron_reboot_persist():
-        reboot_persist_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "reboot_persist.sh")
+        reboot_persist_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "scripts","reboot_persist.sh")
 
         shutil.copy2(reboot_persist_path, "/usr/local/bin/")
         new_reboot_persist_path = os.path.join("/usr/local/bin/", "reboot_persist.sh")
@@ -186,7 +186,7 @@ def main():
 
     def install_listener_script():
         # copy listener script to install location
-        listener_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "challenge-listener.py")
+        listener_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),"scripts", "challenge-listener.py")
         shutil.copy2(listener_path, "/usr/local/bin/")
         new_listener_path = os.path.join("/usr/local/bin/", "challenge-listener.py")
         os.chmod(new_listener_path, 0o755)
