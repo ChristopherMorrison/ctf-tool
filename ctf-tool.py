@@ -206,7 +206,10 @@ def main():
     # Add users to local machine (setup challenge host)
     if args.install == True:
         install_listener_script()
-        install_cron_reboot_persist()
+        try:
+            install_cron_reboot_persist()
+        except FileExistsError as err:
+            pass
         for challenge in challenges:
             challenge.requires_server_path = is_server_required(challenge.directory)
 
