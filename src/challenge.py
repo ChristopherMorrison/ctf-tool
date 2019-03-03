@@ -31,7 +31,10 @@ class Challenge(object):
         self.type = 'standard'
         self.state = 'visible'
         self.requirements = None
-        self.server_required = False
+        self.required_server_path = None
+        self.server_zip_path = None
+        self.username = None
+        self.crontab_path = None
         self.port = random.randint(48620, 49150)
 
         # Flag
