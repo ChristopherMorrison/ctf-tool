@@ -21,7 +21,7 @@ def validate_challenge_bundles(args):
     """ Validates all specified directories in args.directories """
     for challenge_pack in args.directory:
         problem_dir = os.path.join(os.getcwd(), challenge_pack)
-        if validate_ctf_directory(problem_dir) != 0 and not args.force:
+        if validate_ctf_directory(problem_dir) != 0 and args.force is not True:
             quit(1)
 
 
@@ -37,8 +37,7 @@ def get_challenge_list(args):
                 if os.path.isdir(os.path.join(problem_dir, category, challenge)):
                     chal = Challenge(os.path.join(problem_dir, category, challenge))
                     if chal.name in challenge_names:
-                        print(
-                            f"Two or more challenges named {chal.name}")
+                        print(f"Two or more challenges named {chal.name}")
                         # This is because of the zip file names for challenge.zip not being
                         # hash based. This may also be a limitation of CTFd #TODO
                         quit(1)
@@ -216,7 +215,7 @@ def main():
         return requires_server_path
 
     # Add users to local machine (setup challenge host)
-    if args.install:
+    if args.install is True:
         install_listener_script()
         try:
             install_cron_reboot_persist()
