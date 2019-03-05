@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 import os
-import string
 import argparse
 import json
 import re
@@ -13,15 +12,18 @@ import tempfile
 from src.validate import validate_ctf_directory
 from src.challenge import Challenge
 
+
 class EmptyConfigFileError(Exception):
     pass
+
 
 def validate_challenge_bundles(args):
     """ Validates all specified directories in args.directories """
     for challenge_pack in args.directory:
         problem_dir = os.path.join(os.getcwd(), challenge_pack)
-        if validate_ctf_directory(problem_dir) != 0 and not args.force == True:
+        if validate_ctf_directory(problem_dir) != 0 and not args.force:
             quit(1)
+
 
 def get_challenge_list(args):
     """ Builds a list of challenge objects from all challenge bundles in args.directory """
@@ -29,28 +31,33 @@ def get_challenge_list(args):
     challenge_names = []
     for challenge_pack in args.directory:
         problem_dir = os.path.join(os.getcwd(), challenge_pack)
-        category_dirs = [dir for dir in os.listdir(problem_dir) if os.path.isdir(os.path.join(problem_dir,dir))]
+        category_dirs = [dir for dir in os.listdir(problem_dir) if os.path.isdir(os.path.join(problem_dir, dir))]
         for category in category_dirs:
             for challenge in os.listdir(os.path.join(problem_dir, category)):
-                if os.path.isdir(os.path.join(problem_dir, category,challenge)):
+                if os.path.isdir(os.path.join(problem_dir, category, challenge)):
                     chal = Challenge(os.path.join(problem_dir, category, challenge))
                     if chal.name in challenge_names:
-                        print(f"Two or more challenges named {chal.name}") # This is because of the zip file names for challenge.zip not being hash based. This may also be a limitation of CTFd #TODO 
+                        print(
+                            f"Two or more challenges named {chal.name}")
+                        # This is because of the zip file names for challenge.zip not being
+                        # hash based. This may also be a limitation of CTFd #TODO
                         quit(1)
                     challenges.append(chal)
                     challenge_names.append(chal.name)
     for i in range(len(challenges)):
-        challenges[i].id = i+1
+        challenges[i].id = i + 1
     return challenges
+
 
 def get_flag_list(challenges):
     """ Builds a list of objects from challenges that dumbs nicely into json for CTFd """
     challenge_flag_list = []
     challenge_flag_list = [chal.ctfd_flag_repr() for chal in challenges]
-    challenge_flag_list = [flag for flag in challenge_flag_list if not flag == None]
+    challenge_flag_list = [flag for flag in challenge_flag_list if flag is not None]
     for i in range(len(challenge_flag_list)):
-        challenge_flag_list[i].id = i+1
+        challenge_flag_list[i].id = i + 1
     return challenge_flag_list
+
 
 def make_output_folder():
     """ Builds a temporary output folder to copy challenge data into before zip"""
@@ -61,16 +68,18 @@ def make_output_folder():
     os.makedirs(tempuploaddir)
     return tempdirname, tempuploaddir
 
+
 def output_csv(challenges):
     """ Writes the csv format of the ctfd challenges to disk"""
-    chal_file = open("challenges.csv","w")
+    chal_file = open("challenges.csv", "w")
     chal_file.write(f"id,name,description,max_attempts,value,category,type,state,requirements\n")
     for challenge in challenges:
-        chal_file.write(repr(challenge)+"\n")
+        chal_file.write(repr(challenge) + "\n")
     chal_file.close()
 
+
 def dump_to_ctfd_json(not_challenges):
-    chal_dict = {}
+    chal_dict = dict()
     chal_dict['count'] = len(not_challenges)
     chal_dict['results'] = []
     for c, not_chal in enumerate(not_challenges):
@@ -78,13 +87,16 @@ def dump_to_ctfd_json(not_challenges):
     chal_dict['meta'] = {}
     return chal_dict
 
+
 def main():
     # CLI Parser
     parser = argparse.ArgumentParser()
-    parser.add_argument("basezip",help="Zip file to pull ctfd metadata from, use a fresh CTFd instance export if you need one",nargs=1)
-    parser.add_argument("directory",help="Directories of challenge packs to load",nargs="+")
-    parser.add_argument("--force", action="store_true",help="ignore challenge pack validation errors")
-    parser.add_argument("--install", action="store_true",help="use the local machine as the challenge host")
+    parser.add_argument("basezip",
+                        help="Zip file to pull ctfd metadata from, use a fresh CTFd instance export if you need one",
+                        nargs=1)
+    parser.add_argument("directory", help="Directories of challenge packs to load", nargs="+")
+    parser.add_argument("--force", action="store_true", help="ignore challenge pack validation errors")
+    parser.add_argument("--install", action="store_true", help="use the local machine as the challenge host")
     parser.add_argument("--address", nargs=1, help="Server address to list in CTFd for participants to connect to")
     args = parser.parse_args()
 
@@ -108,15 +120,15 @@ def main():
         chal.copy_zip_file_to_temp(tempuploaddir)
 
     challenge_file_list = [chal.ctfd_file_list() for chal in challenges]
-    challenge_file_list = [file for file in challenge_file_list if not file == None]
+    challenge_file_list = [file for file in challenge_file_list if file is not None]
     for i in range(len(challenge_file_list)):
-        challenge_file_list[i].id = i+1
+        challenge_file_list[i].id = i + 1
 
     # Installation
     def force_valid_username(name):
         """force replace certain special characters with _, force to lowercase,
         truncate username if it is over 30 characters"""
-        resulting_username = re.sub("[\t\n /\\><?|\"\'`\[\]{},:;~!@#$%^&*()=]", "_", name)
+        resulting_username = re.sub("[\t\n /\\\\><?|\"\'`\\[\\]{},:;~!@#$%^&*()=]", "_", name)
         if resulting_username is None:
             resulting_username = name
         if len(resulting_username) > 30:
@@ -186,7 +198,7 @@ def main():
 
     def install_listener_script():
         # copy listener script to install location
-        listener_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),"scripts", "challenge-listener.py")
+        listener_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "scripts", "challenge-listener.py")
         shutil.copy2(listener_path, "/usr/local/bin/")
         new_listener_path = os.path.join("/usr/local/bin/", "challenge-listener.py")
         os.chmod(new_listener_path, 0o755)
@@ -204,11 +216,11 @@ def main():
         return requires_server_path
 
     # Add users to local machine (setup challenge host)
-    if args.install == True:
+    if args.install:
         install_listener_script()
         try:
             install_cron_reboot_persist()
-        except FileExistsError as err:
+        except FileExistsError:
             pass
         for challenge in challenges:
             challenge.requires_server_path = is_server_required(challenge.directory)
@@ -219,14 +231,15 @@ def main():
                 os.system("useradd -m {:s}".format(challenge.username))
 
                 # copy everything to new user's home dir
-                # TODO: We should probably only copy a smaller zip to the user's home then run some predefined script per challenge
+                # TODO: We should probably only copy a smaller zip to the user's home
+                # then run some predefined script per challenge
                 copytree(challenge.directory, new_user_home)
 
                 shutil.chown(new_user_home, user="root", group="root")
                 # change file permissions recursively and locate important files
 
-                server_zip_path = None
-                # NOTE: {chris->clif} Could we not have just used an os.system("chmod -r ///") call then changed the flag back?, also shouldn't we delay this call until we've finished moving files
+                # NOTE: {chris->clif} Could we not have just used an os.system("chmod -r ///") call then
+                # changed the flag back?, also shouldn't we delay this call until we've finished moving files
                 for root, dirs, files in os.walk(new_user_home):
                     for item in dirs:
                         dir_path = os.path.join(root, item)
@@ -257,7 +270,7 @@ def main():
                 try:
                     setup_listener(**required_vars)
                     challenge.description += f"\n\nnc {args.address} {challenge.port}"
-                except EmptyConfigFileError as err:
+                except EmptyConfigFileError:
                     print(f"\n\nThe requires-server file for the challenge: {challenge.username} is empty, "
                           f"skipping listener setup for that challenge")
                     print("If you would like to attempt this process when the file contains a valid command, use the "
@@ -265,34 +278,33 @@ def main():
                     continue
 
     # Output ctfd jsons
-    with open(f"{tempdirname}/challenges.json","w") as chal_json:
+    with open(f"{tempdirname}/challenges.json", "w") as chal_json:
         _json_repr_challenges = [chal.ctfd_repr() for chal in challenges]
         json.dump(dump_to_ctfd_json(_json_repr_challenges), chal_json)
 
-    with open(f"{tempdirname}/files.json","w") as files_json:
+    with open(f"{tempdirname}/files.json", "w") as files_json:
         json.dump(dump_to_ctfd_json(challenge_file_list), files_json)
 
-    with open(f"{tempdirname}/flags.json","w") as flags_json:
+    with open(f"{tempdirname}/flags.json", "w") as flags_json:
         json.dump(dump_to_ctfd_json(challenge_flag_list), flags_json)
 
-
-    # Make CTFd config zip  
+    # Make CTFd config zip
     # unzip existing CTFd meta (we'll use every file that we didn't generate a version of)
     temp_unzip_dir = os.path.join(tempfile.gettempdir(), str(uuid.uuid4())[-12:])
     os.makedirs(temp_unzip_dir)
     base_zip = zipfile.ZipFile(os.path.join(os.getcwd(), args.basezip[0]))
     base_zip.extractall(path=temp_unzip_dir)
-    
+
     # Merge dirs
-    config_files_to_copy = [f for f in os.listdir(os.path.join(temp_unzip_dir,'db')) if not f in os.listdir(tempdirname)]
+    config_files_to_copy = [f for f in os.listdir(os.path.join(temp_unzip_dir, 'db')) if
+                            f not in os.listdir(tempdirname)]
     for f in config_files_to_copy:
-        shutil.copy2(os.path.join(temp_unzip_dir,"db",f), os.path.join(tempdirname,f))
+        shutil.copy2(os.path.join(temp_unzip_dir, "db", f), os.path.join(tempdirname, f))
     shutil.rmtree(temp_unzip_dir)
 
     output_zip_name = os.path.join(os.getcwd(), "output", "CTF-name.zip")
     os.system(f"cd {tempdirname}/.. && zip {output_zip_name} -r db/ uploads/*/*")
-    
 
-if __name__=="__main__":
+
+if __name__ == "__main__":
     main()
-    
