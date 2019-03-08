@@ -9,24 +9,37 @@ import argparse
 def validate_ctf_directory(directory):
     valid_directory = True
 
-    for dirname, subdirList, fileList in os.walk(directory, topdown=False):
-        if subdirList:
-            continue
-        if "challenge.zip" not in fileList:
-            print(f"challenge.zip missing in {dirname}\n")
-            valid_directory = False
-        if "value.txt" not in fileList:
-            print(f"value.txt missing in {dirname}\n")
-            valid_directory = False
-        if "message.txt" not in fileList:
-            print(f"message.txt missing in {dirname}\n")
-            valid_directory = False
-        if "flag.txt" not in fileList:
-            print(f"flag.txt missing in {dirname}\n")
-            valid_directory = False
-    #    if len(fileList) is not 4:
-    #        print(f"Incorrect number of files in the directory {dirname}\n")
-    #        valid_directory = False
+    categories = [folder for folder in os.listdir(directory) if os.path.isdir(f"{directory}/{folder}")]
+    # for dirname, subdirList, fileList in os.walk(directory, topdown=False):
+    #     if subdirList:
+    #         continue
+
+    for category in categories:
+        for challenge in os.listdir(f"{directory}/{category}"):
+            dirname = f"{directory}/{category}/{challenge}"
+            if os.path.isdir(dirname):            
+                fileList = os.listdir(dirname)
+
+                # Standard
+                if "challenge.zip" not in fileList:
+                    print(f"(optional) challenge.zip missing in {dirname}\n")
+                    #valid_directory = False
+                if "value.txt" not in fileList:
+                    print(f"value.txt missing in {dirname}\n")
+                    valid_directory = False
+                if "message.txt" not in fileList:
+                    print(f"message.txt missing in {dirname}\n")
+                    valid_directory = False
+                if "flag.txt" not in fileList:
+                    print(f"flag.txt missing in {dirname}\n")
+                    valid_directory = False
+                
+                # Service-req
+
+                # Container-req
+
+                # Machine-req
+
     if not valid_directory:
         print(f"Validation attempt failed for {directory}")
         return(1)
