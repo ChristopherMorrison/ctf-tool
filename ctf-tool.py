@@ -126,8 +126,9 @@ def main():
     # Installation
     def force_valid_username(name):
         """force replace certain special characters with _, force to lowercase,
-        truncate username if it is over 30 characters"""
-        resulting_username = re.sub("[\t\n /\\\\><?|\"\'`\\[\\]{},:;~!@#$%^&*()=]", "_", name)
+        truncate username if it is over 30 characters. Some people think they are super clever when
+        they use accents in their challenge names. (╯°□°）╯︵ ┻━┻"""
+        resulting_username = re.sub("[^A-Za-z0-9_-]", "_", name)
         if resulting_username is None:
             resulting_username = name
         if len(resulting_username) > 30:
@@ -177,6 +178,9 @@ def main():
         os.chmod(binary_path, 0o755)
         # create crontab
         command = f"python3 /usr/local/bin/challenge-listener.py '{requires_server_string}' {port}"
+        create_user_crontab(crontab_path, command, username)
+
+    def create_user_crontab(crontab_path, command, username):
         # internal screaming because of cron
         crontab_string = f"@reboot {command}\n"
         with open(crontab_path, "w") as f:
@@ -228,17 +232,25 @@ def main():
                 challenge.username = force_valid_username(challenge.name)
                 new_user_home = os.path.join("/home/", challenge.username)
                 os.system("useradd -m {:s}".format(challenge.username))
-
+                challenge.server_zip_path = os.path.join(os.path.split(challenge.requires_server_path)[0], "server.zip")
+                if not os.path.exists(challenge.server_zip_path):
+                    # Directory is missing server.zip, but letting execution continue so that the user is warned
+                    challenge.server_zip_path = None
+                else:
+                    shutil.copy2(challenge.server_zip_path, new_user_home)
+                shutil.copy2(challenge.requires_server_path, new_user_home)
                 # copy everything to new user's home dir
                 # TODO: We should probably only copy a smaller zip to the user's home
                 # then run some predefined script per challenge
-                copytree(challenge.directory, new_user_home)
+                # Clif: "Agreed", doing it with the server.zip and requires-server now
+                # copytree(challenge.directory, new_user_home)
 
                 shutil.chown(new_user_home, user="root", group="root")
                 # change file permissions recursively and locate important files
 
                 # NOTE: {chris->clif} Could we not have just used an os.system("chmod -r ///") call then
                 # changed the flag back?, also shouldn't we delay this call until we've finished moving files
+                # NOTE: {clif->chris} You right, I'll fix that
                 for root, dirs, files in os.walk(new_user_home):
                     for item in dirs:
                         dir_path = os.path.join(root, item)
@@ -248,8 +260,6 @@ def main():
                         file_path = os.path.join(root, item)
                         shutil.chown(file_path, user="root", group=challenge.username)
                         os.chmod(file_path, 0o040)
-                        if item == "requires-server":
-                            challenge.requires_server_path = file_path
                         if item == "server.zip":
                             challenge.server_zip_path = file_path
                         if item == "flag.txt" or item == "flag":
@@ -262,11 +272,21 @@ def main():
                                  "port": challenge.port,
                                  "crontab_path": challenge.crontab_path,
                                  "username": challenge.username}
+
+                empty_required_keys = list()
                 for key in list(required_vars.keys()):
                     if required_vars[key] is None:
-                        print(f"key: {key} is not present")
-                        exit(1)
+                        empty_required_keys.append(key)
+
+                if len(empty_required_keys) > 0:
+                    print(f"Challenge listener not set up for challenge: {challenge.name} because the following "
+                          "required parameters were not fulfilled:")
+                    for i in empty_required_keys:
+                        print(f"{i}")
+                    print("")
+                    continue
                 try:
+                    # I might just change this to pass in the whole challenge object
                     setup_listener(**required_vars)
                     challenge.description += f"\n\nnc {args.address} {challenge.port}"
                 except EmptyConfigFileError:
