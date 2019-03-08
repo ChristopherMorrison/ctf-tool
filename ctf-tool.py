@@ -225,6 +225,10 @@ def main():
             challenge.requires_server_path = is_server_required(challenge.directory)
 
             if challenge.requires_server_path is not None:
+                challenge.server_zip_path = os.path.join(os.path.split(challenge.requires_server_path)[0], "server.zip")
+                if not os.path.exists(challenge.server_zip_path):
+                    # Directory is missing server.zip, but letting execution continue so that the user is warned
+                    challenge.server_zip_path = None
                 challenge.username = force_valid_username(challenge.name)
                 new_user_home = os.path.join("/home/", challenge.username)
                 os.system("useradd -m {:s}".format(challenge.username))
@@ -239,6 +243,7 @@ def main():
 
                 # NOTE: {chris->clif} Could we not have just used an os.system("chmod -r ///") call then
                 # changed the flag back?, also shouldn't we delay this call until we've finished moving files
+                # NOTE: {clif->chris} You right
                 for root, dirs, files in os.walk(new_user_home):
                     for item in dirs:
                         dir_path = os.path.join(root, item)
@@ -248,8 +253,6 @@ def main():
                         file_path = os.path.join(root, item)
                         shutil.chown(file_path, user="root", group=challenge.username)
                         os.chmod(file_path, 0o040)
-                        if item == "requires-server":
-                            challenge.requires_server_path = file_path
                         if item == "server.zip":
                             challenge.server_zip_path = file_path
                         if item == "flag.txt" or item == "flag":
@@ -262,10 +265,19 @@ def main():
                                  "port": challenge.port,
                                  "crontab_path": challenge.crontab_path,
                                  "username": challenge.username}
+
+                empty_required_keys = list()
                 for key in list(required_vars.keys()):
                     if required_vars[key] is None:
-                        print(f"key: {key} is not present")
-                        exit(1)
+                        empty_required_keys.append(required_vars[key])
+
+                if len(empty_required_keys) > 0:
+                    print(f"Challenge listener not set up for challenge: {challenge} because the following"
+                          "required parameters were not fulfilled:")
+                    for i in empty_required_keys:
+                        print(f"{i}")
+                    print("")
+                    continue
                 try:
                     setup_listener(**required_vars)
                     challenge.description += f"\n\nnc {args.address} {challenge.port}"
