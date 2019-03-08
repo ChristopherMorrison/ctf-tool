@@ -128,7 +128,7 @@ def main():
         """force replace certain special characters with _, force to lowercase,
         truncate username if it is over 30 characters. Some people think they are super clever when
         they use accents in their challenge names. (╯°□°）╯︵ ┻━┻"""
-        resulting_username = re.sub("[^A-Za-z_-]", "_", name)
+        resulting_username = re.sub("[^A-Za-z0-9_-]", "_", name)
         if resulting_username is None:
             resulting_username = name
         if len(resulting_username) > 30:
@@ -276,10 +276,10 @@ def main():
                 empty_required_keys = list()
                 for key in list(required_vars.keys()):
                     if required_vars[key] is None:
-                        empty_required_keys.append(required_vars[key])
+                        empty_required_keys.append(key)
 
                 if len(empty_required_keys) > 0:
-                    print(f"Challenge listener not set up for challenge: {challenge} because the following"
+                    print(f"Challenge listener not set up for challenge: {challenge.name} because the following "
                           "required parameters were not fulfilled:")
                     for i in empty_required_keys:
                         print(f"{i}")
