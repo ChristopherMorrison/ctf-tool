@@ -246,25 +246,11 @@ def main():
                 # copytree(challenge.directory, new_user_home)
 
                 shutil.chown(new_user_home, user="root", group="root")
-                # change file permissions recursively and locate important files
-
                 # NOTE: {chris->clif} Could we not have just used an os.system("chmod -r ///") call then
                 # changed the flag back?, also shouldn't we delay this call until we've finished moving files
-                # NOTE: {clif->chris} You right, I'll fix that
-                for root, dirs, files in os.walk(new_user_home):
-                    for item in dirs:
-                        dir_path = os.path.join(root, item)
-                        shutil.chown(dir_path, user="root", group="root")
-                        os.chmod(dir_path, 0o050)
-                    for item in files:
-                        file_path = os.path.join(root, item)
-                        shutil.chown(file_path, user="root", group=challenge.username)
-                        os.chmod(file_path, 0o040)
-                        if item == "server.zip":
-                            challenge.server_zip_path = file_path
-                        if item == "flag.txt" or item == "flag":
-                            shutil.chown(file_path, user="root", group=challenge.username)
-                            os.chmod(file_path, 0o040)
+                # NOTE: {clif->chris} You right, I'll fix that. 
+                os.system(f"chown -R root:root {new_user_home}")
+                os.system(f"chmod -R 040 {new_user_home}")
 
                 challenge.crontab_path = os.path.join("/var/spool/cron/crontabs", challenge.username)
                 required_vars = {"requires_server_path": challenge.requires_server_path,
