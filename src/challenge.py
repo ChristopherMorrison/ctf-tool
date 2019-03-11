@@ -4,7 +4,7 @@ import shutil
 import tempfile
 import re
 from src.util import EmptyConfigFileError
-
+import textwrap
 
 # literally just a token class
 class _chal_rep(object):
@@ -122,3 +122,30 @@ class Challenge(object):
 
     def set_listener_command(self):
         self.listener_command = f"python3 /usr/local/bin/challenge-listener.py '{self.requires_server_string}' {self.port}"
+
+    def generate_dockerfile(self, out_path):
+        dockerfile_template = f"""
+                                    FROM "ubuntu"
+                                    COPY install_required_packages.sh /root/install_required_packages.sh
+                                    COPY server.zip /home/{self.username}/server/server.zip 
+                                    COPY requires-server /home/{self.username}/requires-server
+                                    COPY challenge-listener.py /bin/
+                                    RUN chmod 755 /bin/challenge-listener.py 
+                                    RUN apt update
+                                    RUN /root/install_required_packages.sh
+                                    RUN useradd -M -d /home/{self.username} {self.username}
+                                    WORKDIR /home/{self.username}/server
+                                    RUN unzip server.zip 
+                                    RUN chmod -R 755 $(pwd)
+                                    RUN mv * .. 
+                                    WORKDIR /home/{self.username}
+                                    CMD {self.listener_command}"""
+
+        dockerfile_template = textwrap.dedent(dockerfile_template)
+    
+        if os.path.split(out_path)[1] != "Dockerfile":
+            out_path = os.path.join(out_path, "Dockerfile")
+
+        with open(out_path, "w") as f:
+            f.write(dockerfile_template)
+
