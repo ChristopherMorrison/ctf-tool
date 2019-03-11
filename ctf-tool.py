@@ -257,6 +257,28 @@ def install_on_current_machine(challenge, new_user_home, address):
         raise EmptyConfigFileError
 
 
+def create_challenge_docker_env(path, challenges):
+    docker_compose_str = "version: '3.3'\nservices:\n"
+    dockerenv_path = os.path.join(path, "dockerenv")
+    os.mkdir(dockerenv_path)
+    for challenge in challenges:
+
+        challenge_docker_path = os.path.join(dockerenv_path, challenge.username)
+        os.mkdir(challenge_docker_path)
+
+        shutil.copy2(challenge.server_zip_path, challenge_docker_path)
+        shutil.copy2(challenge.requires_server_path, challenge_docker_path)
+        challenge.generate_dockerfile(challenge_docker_path)
+        docker_compose_str += f"\t{challenge.username}:\n"
+        docker_compose_str += f"\t\tbuild: '{challenge.username}/.'\n"
+        docker_compose_str += f"\t\tuser: '{challenge.username}'\n"
+        docker_compose_str += f"\t\ttty: true\n"
+
+    docker_compose_path = os.path.join(dockerenv_path, "docker-compose.yml")
+    with open(docker_compose_path, "w") as f:
+        f.write(docker_compose_str)
+
+
 def main():
     # CLI Parser
     parser = argparse.ArgumentParser()
