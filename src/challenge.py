@@ -37,7 +37,7 @@ class Challenge(object):
         self.requirements = None
         
         # Server Challenge
-        self.required_server_path = None
+        self.requires_server_path = None
         self.server_zip_path = None
         self.username = None
         self.crontab_path = None
