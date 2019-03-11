@@ -286,7 +286,7 @@ def create_challenge_docker_env(path, challenges):
         docker_compose_str += f"{t}{t}user: '{challenge.username}'\n"
         docker_compose_str += f"{t}{t}tty: true\n"
         docker_compose_str += f"{t}{t}ports:\n"
-        docker_compose_str += f"{t}{t} - '{challenge.port}'\n"
+        docker_compose_str += f"{t}{t} - '{challenge.port}:{challenge.port}'\n"
 
     docker_compose_path = os.path.join(dockerenv_path, "docker-compose.yml")
     with open(docker_compose_path, "w") as f:
