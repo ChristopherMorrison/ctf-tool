@@ -110,7 +110,7 @@ class Challenge(object):
             raise EmptyConfigFileError
         requires_server_string = re.sub("(\r)*\n", "", requires_server_string)
 
-        requires_server_args = requires_server_string.split(" ")
+        """requires_server_args = requires_server_string.split(" ")
         if len(requires_server_args) > 1:
             requires_server_args[1] = os.path.join(os.path.abspath(os.path.dirname(self.requires_server_path)),
                                                    requires_server_args[1])
@@ -118,6 +118,7 @@ class Challenge(object):
             requires_server_args[0] = os.path.join(os.path.abspath(os.path.dirname(self.requires_server_path)),
                                                    requires_server_args[0])
         requires_server_string = " ".join(requires_server_args)
+        """
         self.requires_server_string = requires_server_string
 
     def set_listener_command(self):
@@ -129,8 +130,8 @@ class Challenge(object):
                                     COPY install_required_packages.sh /root/install_required_packages.sh
                                     COPY server.zip /home/{self.username}/server/server.zip 
                                     COPY requires-server /home/{self.username}/requires-server
-                                    COPY challenge-listener.py /bin/
-                                    RUN chmod 755 /bin/challenge-listener.py 
+                                    COPY challenge-listener.py /usr/local/bin/challenge-listener.py
+                                    RUN chmod 755 /usr/local/bin/challenge-listener.py 
                                     RUN apt update
                                     RUN /root/install_required_packages.sh
                                     RUN useradd -M -d /home/{self.username} {self.username}
