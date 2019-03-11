@@ -302,6 +302,7 @@ def main():
     parser.add_argument("directory", help="Directories of challenge packs to load", nargs="+")
     parser.add_argument("--force", action="store_true", help="ignore challenge pack validation errors")
     parser.add_argument("--install", action="store_true", help="use the local machine as the challenge host")
+    parser.add_argument("-d", "--docker", help="Install service challenges through docker", action='store_true')
     parser.add_argument("--address", nargs=1, help="Server address to list in CTFd for participants to connect to")
     args = parser.parse_args()
 
@@ -333,15 +334,6 @@ def main():
 
     # Add users to local machine (setup challenge host)
     if args.install is True:
-        install_listener_script()
-        try:
-            install_cron_reboot_persist()
-        except FileExistsError:
-            pass
-        except FileNotFoundError:
-            print("/etc/rc.#d folders not present on current system, skipping reboot persistence")
-            pass
-
         for challenge in challenges:
             challenge.requires_server_path = is_server_required(challenge.directory)
 
@@ -353,11 +345,28 @@ def main():
                 challenge.crontab_path = os.path.join("/var/spool/cron/crontabs", challenge.username)
                 challenge.set_requires_server_string()
                 challenge.set_listener_command()
-                try:
-                    pass
-                    install_on_current_machine(challenge, new_user_home, args.address)
-                except EmptyConfigFileError:
-                    continue
+        if args.docker is True:
+            challenges_requiring_server = [challenge for challenge in challenges if challenge.requires_server_path is not None]
+            create_challenge_docker_env(os.getcwd(), challenges_requiring_server)
+
+        else:
+
+            for challenge in challenges:
+                if challenge.requires_server_path is not None:
+                    new_user_home = os.path.join("/home/", challenge.username)
+                    try:
+                        install_on_current_machine(challenge, new_user_home, args.address)
+                    except EmptyConfigFileError:
+                        continue
+
+            install_listener_script()
+            try:
+                install_cron_reboot_persist()
+            except FileExistsError:
+                pass
+            except FileNotFoundError:
+                print("/etc/rc.#d folders not present on current system, skipping reboot persistence")
+                pass
 
 
     # Output ctfd jsons
