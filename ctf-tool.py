@@ -267,20 +267,26 @@ def create_challenge_docker_env(path, challenges):
                                                 "scripts",
                                                 "install_required_packages.sh")
     os.mkdir(dockerenv_path)
+    # yaml is anti tabs
+    t = "    "
     for challenge in challenges:
 
         challenge_docker_path = os.path.join(dockerenv_path, challenge.username)
         os.mkdir(challenge_docker_path)
-
-        shutil.copy2(listener_script_path, challenge_docker_path)
-        shutil.copy2(required_package_script_path, challenge_docker_path)
-        shutil.copy2(challenge.server_zip_path, challenge_docker_path)
-        shutil.copy2(challenge.requires_server_path, challenge_docker_path)
+        try:
+            shutil.copy2(listener_script_path, challenge_docker_path)
+            shutil.copy2(required_package_script_path, challenge_docker_path)
+            shutil.copy2(challenge.server_zip_path, challenge_docker_path)
+            shutil.copy2(challenge.requires_server_path, challenge_docker_path)
+        except Exception:
+            continue
         challenge.generate_dockerfile(challenge_docker_path)
-        docker_compose_str += f"\t{challenge.username}:\n"
-        docker_compose_str += f"\t\tbuild: '{challenge.username}/.'\n"
-        docker_compose_str += f"\t\tuser: '{challenge.username}'\n"
-        docker_compose_str += f"\t\ttty: true\n"
+        docker_compose_str += f"{t}{challenge.username}:\n"
+        docker_compose_str += f"{t}{t}build: '{challenge.username}/.'\n"
+        docker_compose_str += f"{t}{t}user: '{challenge.username}'\n"
+        docker_compose_str += f"{t}{t}tty: true\n"
+        docker_compose_str += f"{t}{t}ports:\n"
+        docker_compose_str += f"{t}{t} - '{challenge.port}'\n"
 
     docker_compose_path = os.path.join(dockerenv_path, "docker-compose.yml")
     with open(docker_compose_path, "w") as f:
@@ -353,11 +359,6 @@ def main():
                 except EmptyConfigFileError:
                     continue
 
-        """for challenge in challenges:
-            if challenge.requires_server_path is not None:
-                with open(f"{challenge.username}.pickle", "wb") as f:
-                    pickle.dump(challenge, f)
-        """
 
     # Output ctfd jsons
     with open(f"{tempdirname}/challenges.json", "w") as chal_json:
