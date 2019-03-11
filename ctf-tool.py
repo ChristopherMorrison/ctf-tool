@@ -11,10 +11,7 @@ import tempfile
 import pickle
 from src.validate import validate_ctf_directory
 from src.challenge import Challenge
-
-
-class EmptyConfigFileError(Exception):
-    pass
+from src.util import EmptyConfigFileError
 
 
 def validate_challenge_bundles(args):

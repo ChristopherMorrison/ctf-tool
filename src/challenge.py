@@ -2,6 +2,9 @@ import os
 import random
 import shutil
 import tempfile
+import re
+from src.util import EmptyConfigFileError
+
 
 # literally just a token class
 class _chal_rep(object):
@@ -36,6 +39,8 @@ class Challenge(object):
         self.username = None
         self.crontab_path = None
         self.port = random.randint(48620, 49150)
+        self.requires_server_string = None
+        self.listener_command = None
 
         # Flag
         self.flag = contents_of(os.path.join(abs_directory,"flag.txt"))
@@ -96,3 +101,24 @@ class Challenge(object):
             retVal.challenge_id = self.id
             retVal.page_id = None
         return retVal
+
+    def set_requires_server_string(self):
+        with open(self.requires_server_path, "r") as f:
+            requires_server_string = f.readline()
+
+        if requires_server_string == "" or requires_server_string is None:
+            raise EmptyConfigFileError
+        requires_server_string = re.sub("(\r)*\n", "", requires_server_string)
+
+        requires_server_args = requires_server_string.split(" ")
+        if len(requires_server_args) > 1:
+            requires_server_args[1] = os.path.join(os.path.abspath(os.path.dirname(self.requires_server_path)),
+                                                   requires_server_args[1])
+        else:
+            requires_server_args[0] = os.path.join(os.path.abspath(os.path.dirname(self.requires_server_path)),
+                                                   requires_server_args[0])
+        requires_server_string = " ".join(requires_server_args)
+        self.requires_server_string = requires_server_string
+
+    def set_listener_command(self):
+        self.listener_command = f"python3 /usr/local/bin/challenge-listener.py '{self.requires_server_string}' {self.port}"
