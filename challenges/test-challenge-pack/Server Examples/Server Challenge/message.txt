@@ -1,0 +1,3 @@
+This is the problem description, the flag is flag{demo}
+
+The players should be able to connect to the server if --install is used.

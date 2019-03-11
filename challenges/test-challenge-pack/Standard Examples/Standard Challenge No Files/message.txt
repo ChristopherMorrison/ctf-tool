@@ -1,0 +1,4 @@
+This is the problem description, the flag is flag{demo}
+
+This problem only differs from the other one by not having any 
+files for our players to download.
