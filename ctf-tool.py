@@ -8,7 +8,7 @@ import uuid
 import zipfile
 import time
 import tempfile
-
+import pickle
 from src.validate import validate_ctf_directory
 from src.challenge import Challenge
 
@@ -112,6 +112,39 @@ def copytree(src, dst, symlinks=False, ignore=None):
             shutil.copy2(s, d)
 
 
+def get_binary_path_from_requires_server_string(requires_server_string):
+    requires_server_args = requires_server_string.split(" ")
+    if len(requires_server_args) > 1:
+        binary_path = requires_server_args[1]
+    else:
+        binary_path = requires_server_args[0]
+
+    return binary_path
+
+
+def get_requires_server_string(path):
+    with open(path, "r") as f:
+        requires_server_string = f.readline()
+
+    if requires_server_string == "" or requires_server_string is None:
+        raise EmptyConfigFileError
+    requires_server_string = re.sub("(\r)*\n", "", requires_server_string)
+
+    requires_server_args = requires_server_string.split(" ")
+    if len(requires_server_args) > 1:
+        requires_server_args[1] = os.path.join(os.path.abspath(os.path.dirname(path)),
+                                               requires_server_args[1])
+    else:
+        requires_server_args[0] = os.path.join(os.path.abspath(os.path.dirname(path)),
+                                               requires_server_args[0])
+    requires_server_string = " ".join(requires_server_args)
+    return requires_server_string
+
+
+def get_listener_command(requires_server_string, port):
+    return f"python3 /usr/local/bin/challenge-listener.py '{requires_server_string}' {port}"
+
+
 def setup_listener(requires_server_path, server_zip_path, port, crontab_path, username):
     """sets up listeners"""
     if server_zip_path is not None:
@@ -122,27 +155,15 @@ def setup_listener(requires_server_path, server_zip_path, port, crontab_path, us
         copytree(unzipped_server_dir, os.path.split(server_zip_path)[0])
         shutil.rmtree(unzipped_server_dir, ignore_errors=True)
 
-    with open(requires_server_path, "r") as f:
-        requires_server_string = f.readline()
-        if requires_server_string == "" or requires_server_string is None:
-            raise EmptyConfigFileError
-        requires_server_string = re.sub("(\r)*\n", "", requires_server_string)
-        requires_server_string = requires_server_string.split(" ")
-        if len(requires_server_string) > 1:
-            requires_server_string[1] = os.path.join(os.path.abspath(os.path.dirname(requires_server_path)),
-                                                     requires_server_string[1])
-            binary_path = requires_server_string[1]
-        else:
-            requires_server_string[0] = os.path.join(os.path.abspath(os.path.dirname(requires_server_path)),
-                                                     requires_server_string[0])
-            binary_path = requires_server_string[0]
-        requires_server_string = " ".join(requires_server_string)
+    requires_server_string = get_requires_server_string(requires_server_path)
+    command = get_listener_command(requires_server_string, port)
 
+    binary_path = get_binary_path_from_requires_server_string(requires_server_string)
     # change perms for binary
     shutil.chown(binary_path, user="root", group="root")
     os.chmod(binary_path, 0o755)
     # create crontab
-    command = f"python3 /usr/local/bin/challenge-listener.py '{requires_server_string}' {port}"
+
     create_user_crontab(crontab_path, command, username)
 
 
@@ -298,13 +319,16 @@ def main():
                 challenge.server_zip_path = os.path.join(os.path.split(challenge.requires_server_path)[0], "server.zip")
                 challenge.crontab_path = os.path.join("/var/spool/cron/crontabs", challenge.username)
                 try:
+                    pass
                     install_on_current_machine(challenge, new_user_home, args.address)
                 except EmptyConfigFileError:
                     continue
 
-        for challenge in challenges:
+        """for challenge in challenges:
             if challenge.requires_server_path is not None:
-                print(f"{challenge.name}")
+                with open(f"{challenge.name}.pickle", "wb") as f:
+                    pickle.dump(challenge, f)
+        """
 
     # Output ctfd jsons
     with open(f"{tempdirname}/challenges.json", "w") as chal_json:
