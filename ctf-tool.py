@@ -260,12 +260,20 @@ def install_on_current_machine(challenge, new_user_home, address):
 def create_challenge_docker_env(path, challenges):
     docker_compose_str = "version: '3.3'\nservices:\n"
     dockerenv_path = os.path.join(path, "dockerenv")
+    listener_script_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                        "scripts",
+                                        "challenge-listener.py")
+    required_package_script_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                                "scripts",
+                                                "install_required_packages.sh")
     os.mkdir(dockerenv_path)
     for challenge in challenges:
 
         challenge_docker_path = os.path.join(dockerenv_path, challenge.username)
         os.mkdir(challenge_docker_path)
 
+        shutil.copy2(listener_script_path, challenge_docker_path)
+        shutil.copy2(required_package_script_path, challenge_docker_path)
         shutil.copy2(challenge.server_zip_path, challenge_docker_path)
         shutil.copy2(challenge.requires_server_path, challenge_docker_path)
         challenge.generate_dockerfile(challenge_docker_path)
