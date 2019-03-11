@@ -1,1 +1,1 @@
-docker run -d -p80:8000 --restart always ctfd/ctfd
+docker run -d -p8000:8000 --restart always ctfd/ctfd

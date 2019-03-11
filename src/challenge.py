@@ -24,26 +24,26 @@ class Challenge(object):
         self.directory = abs_directory
         self.challenge_binary = "" # use for challenge.zip?
 
-        # Challenge
+        # Standard Challenge
         self.id = None
         self.name = os.path.basename(abs_directory)
+        self.flag = contents_of(os.path.join(abs_directory,"flag.txt"))
         self.description = contents_of(os.path.join(abs_directory, 'message.txt')).strip()
-        self.max_attempts = int(contents_of(os.path.join(abs_directory, "max-attempts")) if os.path.exists(os.path.join(abs_directory,"max-attempts")) else 0)
+        self.max_attempts = int(contents_of(os.path.join(abs_directory, "max-attempts")) if os.path.exists(os.path.join(abs_directory,"max-attempts")) else 0) # TODO: no demo yet
         self.value = int(contents_of(os.path.join(abs_directory, 'value.txt')))
         self.category = os.path.basename(os.path.dirname(abs_directory))
         self.type = 'standard'
         self.state = 'visible'
         self.requirements = None
-        self.requires_server_path = None
+        
+        # Server Challenge
+        self.required_server_path = None
         self.server_zip_path = None
         self.username = None
         self.crontab_path = None
         self.port = random.randint(48620, 49150)
         self.requires_server_string = None
         self.listener_command = None
-
-        # Flag
-        self.flag = contents_of(os.path.join(abs_directory,"flag.txt"))
 
         # Files
         self.has_challenge_zip = os.path.exists(os.path.join(abs_directory,"challenge.zip"))
