@@ -31,7 +31,7 @@ class Challenge(object):
         self.type = 'standard'
         self.state = 'visible'
         self.requirements = None
-        self.required_server_path = None
+        self.requires_server_path = None
         self.server_zip_path = None
         self.username = None
         self.crontab_path = None
