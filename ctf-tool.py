@@ -315,6 +315,8 @@ def main():
                 new_user_home = os.path.join("/home/", challenge.username)
                 challenge.server_zip_path = os.path.join(os.path.split(challenge.requires_server_path)[0], "server.zip")
                 challenge.crontab_path = os.path.join("/var/spool/cron/crontabs", challenge.username)
+                challenge.set_requires_server_string()
+                challenge.set_listener_command()
                 try:
                     pass
                     install_on_current_machine(challenge, new_user_home, args.address)
@@ -323,7 +325,7 @@ def main():
 
         """for challenge in challenges:
             if challenge.requires_server_path is not None:
-                with open(f"{challenge.name}.pickle", "wb") as f:
+                with open(f"{challenge.username}.pickle", "wb") as f:
                     pickle.dump(challenge, f)
         """
 
