@@ -2,6 +2,9 @@ import os
 import random
 import shutil
 import tempfile
+import re
+from src.util import EmptyConfigFileError
+import textwrap
 
 # literally just a token class
 class _chal_rep(object):
@@ -31,11 +34,13 @@ class Challenge(object):
         self.type = 'standard'
         self.state = 'visible'
         self.requirements = None
-        self.required_server_path = None
+        self.requires_server_path = None
         self.server_zip_path = None
         self.username = None
         self.crontab_path = None
         self.port = random.randint(48620, 49150)
+        self.requires_server_string = None
+        self.listener_command = None
 
         # Flag
         self.flag = contents_of(os.path.join(abs_directory,"flag.txt"))
@@ -96,3 +101,52 @@ class Challenge(object):
             retVal.challenge_id = self.id
             retVal.page_id = None
         return retVal
+
+    def set_requires_server_string(self):
+        with open(self.requires_server_path, "r") as f:
+            requires_server_string = f.readline()
+
+        if requires_server_string == "" or requires_server_string is None:
+            raise EmptyConfigFileError
+        requires_server_string = re.sub("(\r)*\n", "", requires_server_string)
+
+        """requires_server_args = requires_server_string.split(" ")
+        if len(requires_server_args) > 1:
+            requires_server_args[1] = os.path.join(os.path.abspath(os.path.dirname(self.requires_server_path)),
+                                                   requires_server_args[1])
+        else:
+            requires_server_args[0] = os.path.join(os.path.abspath(os.path.dirname(self.requires_server_path)),
+                                                   requires_server_args[0])
+        requires_server_string = " ".join(requires_server_args)
+        """
+        self.requires_server_string = requires_server_string
+
+    def set_listener_command(self):
+        self.listener_command = f"python3 /usr/local/bin/challenge-listener.py '{self.requires_server_string}' {self.port}"
+
+    def generate_dockerfile(self, out_path):
+        dockerfile_template = f"""
+                                    FROM "ubuntu"
+                                    COPY install_required_packages.sh /root/install_required_packages.sh
+                                    COPY server.zip /home/{self.username}/server/server.zip 
+                                    COPY requires-server /home/{self.username}/requires-server
+                                    COPY challenge-listener.py /usr/local/bin/challenge-listener.py
+                                    RUN chmod 755 /usr/local/bin/challenge-listener.py 
+                                    RUN apt update
+                                    RUN /root/install_required_packages.sh
+                                    RUN useradd -M -d /home/{self.username} {self.username}
+                                    WORKDIR /home/{self.username}/server
+                                    RUN unzip server.zip 
+                                    RUN chmod -R 755 $(pwd)
+                                    RUN mv * .. 
+                                    WORKDIR /home/{self.username}
+                                    CMD {self.listener_command}"""
+
+        dockerfile_template = textwrap.dedent(dockerfile_template)
+    
+        if os.path.split(out_path)[1] != "Dockerfile":
+            out_path = os.path.join(out_path, "Dockerfile")
+
+        with open(out_path, "w") as f:
+            f.write(dockerfile_template)
+
