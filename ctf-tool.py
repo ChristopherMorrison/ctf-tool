@@ -212,7 +212,9 @@ def install_on_current_machine(challenge, new_user_home, address):
         challenge.server_zip_path = None
     else:
         shutil.copy2(challenge.server_zip_path, new_user_home)
+        challenge.server_zip_path = os.path.join(new_user_home, "server.zip")
     shutil.copy2(challenge.requires_server_path, new_user_home)
+    challenge.requires_server_path = os.path.join(new_user_home, "requires-server")
     # copy everything to new user's home dir
     # TODO: We should probably only copy a smaller zip to the user's home
     # then run some predefined script per challenge
