@@ -119,6 +119,7 @@ def get_binary_path_from_requires_server_string(requires_server_string):
     return binary_path
 
 
+"""
 def get_requires_server_string(path):
     with open(path, "r") as f:
         requires_server_string = f.readline()
@@ -136,32 +137,30 @@ def get_requires_server_string(path):
                                                requires_server_args[0])
     requires_server_string = " ".join(requires_server_args)
     return requires_server_string
-
-
+"""
+"""
 def get_listener_command(requires_server_string, port):
     return f"python3 /usr/local/bin/challenge-listener.py '{requires_server_string}' {port}"
+"""
 
 
-def setup_listener(requires_server_path, server_zip_path, port, crontab_path, username):
+def setup_listener(challenge):
     """sets up listeners"""
-    if server_zip_path is not None:
-        zip_ref = zipfile.ZipFile(server_zip_path, "r")
-        unzipped_server_dir = os.path.join(os.path.abspath(os.path.dirname(server_zip_path)), "server")
+    if challenge.server_zip_path is not None:
+        zip_ref = zipfile.ZipFile(challenge.server_zip_path, "r")
+        unzipped_server_dir = os.path.join(os.path.abspath(os.path.dirname(challenge.server_zip_path)), "server")
         zip_ref.extractall(unzipped_server_dir)
         zip_ref.close()
-        copytree(unzipped_server_dir, os.path.split(server_zip_path)[0])
+        copytree(unzipped_server_dir, os.path.split(challenge.server_zip_path)[0])
         shutil.rmtree(unzipped_server_dir, ignore_errors=True)
 
-    requires_server_string = get_requires_server_string(requires_server_path)
-    command = get_listener_command(requires_server_string, port)
-
-    binary_path = get_binary_path_from_requires_server_string(requires_server_string)
+    binary_path = get_binary_path_from_requires_server_string(challenge.requires_server_string)
     # change perms for binary
     shutil.chown(binary_path, user="root", group="root")
     os.chmod(binary_path, 0o755)
     # create crontab
 
-    create_user_crontab(crontab_path, command, username)
+    create_user_crontab(challenge.crontab_path, challenge.listener_command, challenge.username)
 
 
 def create_user_crontab(crontab_path, command, username):
@@ -247,13 +246,12 @@ def install_on_current_machine(challenge, new_user_home, address):
         return
     try:
         # I might just change this to pass in the whole challenge object
-        setup_listener(**required_vars)
+        #setup_listener(**required_vars)
+        setup_listener(challenge)
         challenge.description += f"\n\nnc {address} {challenge.port}"
     except EmptyConfigFileError:
         print(f"\n\nThe requires-server file for the challenge: {challenge.username} is empty, "
               f"skipping listener setup for that challenge")
-        print("If you would like to attempt this process when the file contains a valid command, use the "
-              f"following dict: {required_vars}\n\n")
         raise EmptyConfigFileError
 
 
