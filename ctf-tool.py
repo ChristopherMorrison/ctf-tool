@@ -119,31 +119,6 @@ def get_binary_path_from_requires_server_string(requires_server_string):
     return binary_path
 
 
-"""
-def get_requires_server_string(path):
-    with open(path, "r") as f:
-        requires_server_string = f.readline()
-
-    if requires_server_string == "" or requires_server_string is None:
-        raise EmptyConfigFileError
-    requires_server_string = re.sub("(\r)*\n", "", requires_server_string)
-
-    requires_server_args = requires_server_string.split(" ")
-    if len(requires_server_args) > 1:
-        requires_server_args[1] = os.path.join(os.path.abspath(os.path.dirname(path)),
-                                               requires_server_args[1])
-    else:
-        requires_server_args[0] = os.path.join(os.path.abspath(os.path.dirname(path)),
-                                               requires_server_args[0])
-    requires_server_string = " ".join(requires_server_args)
-    return requires_server_string
-"""
-"""
-def get_listener_command(requires_server_string, port):
-    return f"python3 /usr/local/bin/challenge-listener.py '{requires_server_string}' {port}"
-"""
-
-
 def setup_listener(challenge):
     """sets up listeners"""
     if challenge.server_zip_path is not None:
