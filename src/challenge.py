@@ -110,15 +110,13 @@ class Challenge(object):
             raise EmptyConfigFileError
         requires_server_string = re.sub("(\r)*\n", "", requires_server_string)
 
-        """requires_server_args = requires_server_string.split(" ")
+        requires_server_args = requires_server_string.split(" ")
         if len(requires_server_args) > 1:
-            requires_server_args[1] = os.path.join(os.path.abspath(os.path.dirname(self.requires_server_path)),
-                                                   requires_server_args[1])
+            requires_server_args[1] = os.path.join(f"/home/{self.username}", requires_server_args[1])
         else:
-            requires_server_args[0] = os.path.join(os.path.abspath(os.path.dirname(self.requires_server_path)),
-                                                   requires_server_args[0])
+            requires_server_args[0] = os.path.join(f"/home/{self.username}", requires_server_args[0])
         requires_server_string = " ".join(requires_server_args)
-        """
+
         self.requires_server_string = requires_server_string
 
     def set_listener_command(self):
