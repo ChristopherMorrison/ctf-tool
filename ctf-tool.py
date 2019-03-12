@@ -346,7 +346,9 @@ def main():
         if args.docker is True:
             challenges_requiring_server = [challenge for challenge in challenges if challenge.requires_server_path is not None]
             create_challenge_docker_env(os.getcwd(), challenges_requiring_server)
-
+            os.chdir("dockerenv")
+            os.system("docker-compose build && docker-compose up -d")
+            os.chdir(os.path.abspath(os.path.dirname(os.getcwd())))
         else:
 
             for challenge in challenges:
