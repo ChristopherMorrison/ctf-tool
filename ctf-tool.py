@@ -119,49 +119,23 @@ def get_binary_path_from_requires_server_string(requires_server_string):
     return binary_path
 
 
-def get_requires_server_string(path):
-    with open(path, "r") as f:
-        requires_server_string = f.readline()
-
-    if requires_server_string == "" or requires_server_string is None:
-        raise EmptyConfigFileError
-    requires_server_string = re.sub("(\r)*\n", "", requires_server_string)
-
-    requires_server_args = requires_server_string.split(" ")
-    if len(requires_server_args) > 1:
-        requires_server_args[1] = os.path.join(os.path.abspath(os.path.dirname(path)),
-                                               requires_server_args[1])
-    else:
-        requires_server_args[0] = os.path.join(os.path.abspath(os.path.dirname(path)),
-                                               requires_server_args[0])
-    requires_server_string = " ".join(requires_server_args)
-    return requires_server_string
-
-
-def get_listener_command(requires_server_string, port):
-    return f"python3 /usr/local/bin/challenge-listener.py '{requires_server_string}' {port}"
-
-
-def setup_listener(requires_server_path, server_zip_path, port, crontab_path, username):
+def setup_listener(challenge):
     """sets up listeners"""
-    if server_zip_path is not None:
-        zip_ref = zipfile.ZipFile(server_zip_path, "r")
-        unzipped_server_dir = os.path.join(os.path.abspath(os.path.dirname(server_zip_path)), "server")
+    if challenge.server_zip_path is not None:
+        zip_ref = zipfile.ZipFile(challenge.server_zip_path, "r")
+        unzipped_server_dir = os.path.join(os.path.abspath(os.path.dirname(challenge.server_zip_path)), "server")
         zip_ref.extractall(unzipped_server_dir)
         zip_ref.close()
-        copytree(unzipped_server_dir, os.path.split(server_zip_path)[0])
+        copytree(unzipped_server_dir, os.path.split(challenge.server_zip_path)[0])
         shutil.rmtree(unzipped_server_dir, ignore_errors=True)
 
-    requires_server_string = get_requires_server_string(requires_server_path)
-    command = get_listener_command(requires_server_string, port)
-
-    binary_path = get_binary_path_from_requires_server_string(requires_server_string)
+    binary_path = get_binary_path_from_requires_server_string(challenge.requires_server_string)
     # change perms for binary
     shutil.chown(binary_path, user="root", group="root")
     os.chmod(binary_path, 0o755)
     # create crontab
 
-    create_user_crontab(crontab_path, command, username)
+    create_user_crontab(challenge.crontab_path, challenge.listener_command, challenge.username)
 
 
 def create_user_crontab(crontab_path, command, username):
@@ -213,7 +187,9 @@ def install_on_current_machine(challenge, new_user_home, address):
         challenge.server_zip_path = None
     else:
         shutil.copy2(challenge.server_zip_path, new_user_home)
+        challenge.server_zip_path = os.path.join(new_user_home, "server.zip")
     shutil.copy2(challenge.requires_server_path, new_user_home)
+    challenge.requires_server_path = os.path.join(new_user_home, "requires-server")
     # copy everything to new user's home dir
     # TODO: We should probably only copy a smaller zip to the user's home
     # then run some predefined script per challenge
@@ -247,13 +223,12 @@ def install_on_current_machine(challenge, new_user_home, address):
         return
     try:
         # I might just change this to pass in the whole challenge object
-        setup_listener(**required_vars)
+        #setup_listener(**required_vars)
+        setup_listener(challenge)
         challenge.description += f"\n\nnc {address} {challenge.port}"
     except EmptyConfigFileError:
         print(f"\n\nThe requires-server file for the challenge: {challenge.username} is empty, "
               f"skipping listener setup for that challenge")
-        print("If you would like to attempt this process when the file contains a valid command, use the "
-              f"following dict: {required_vars}\n\n")
         raise EmptyConfigFileError
 
 
@@ -302,6 +277,7 @@ def main():
     parser.add_argument("directory", help="Directories of challenge packs to load", nargs="+")
     parser.add_argument("--force", action="store_true", help="ignore challenge pack validation errors")
     parser.add_argument("--install", action="store_true", help="use the local machine as the challenge host")
+    parser.add_argument("-d", "--docker", help="Install service challenges through docker", action='store_true')
     parser.add_argument("--address", nargs=1, help="Server address to list in CTFd for participants to connect to")
     args = parser.parse_args()
 
@@ -333,15 +309,6 @@ def main():
 
     # Add users to local machine (setup challenge host)
     if args.install is True:
-        install_listener_script()
-        try:
-            install_cron_reboot_persist()
-        except FileExistsError:
-            pass
-        except FileNotFoundError:
-            print("/etc/rc.#d folders not present on current system, skipping reboot persistence")
-            pass
-
         for challenge in challenges:
             challenge.requires_server_path = is_server_required(challenge.directory)
 
@@ -353,11 +320,30 @@ def main():
                 challenge.crontab_path = os.path.join("/var/spool/cron/crontabs", challenge.username)
                 challenge.set_requires_server_string()
                 challenge.set_listener_command()
-                try:
-                    pass
-                    install_on_current_machine(challenge, new_user_home, args.address)
-                except EmptyConfigFileError:
-                    continue
+        if args.docker is True:
+            challenges_requiring_server = [challenge for challenge in challenges if challenge.requires_server_path is not None]
+            create_challenge_docker_env(os.getcwd(), challenges_requiring_server)
+            os.chdir("dockerenv")
+            os.system("docker-compose build && docker-compose up -d")
+            os.chdir(os.path.abspath(os.path.dirname(os.getcwd())))
+        else:
+
+            for challenge in challenges:
+                if challenge.requires_server_path is not None:
+                    new_user_home = os.path.join("/home/", challenge.username)
+                    try:
+                        install_on_current_machine(challenge, new_user_home, args.address)
+                    except EmptyConfigFileError:
+                        continue
+
+            install_listener_script()
+            try:
+                install_cron_reboot_persist()
+            except FileExistsError:
+                pass
+            except FileNotFoundError:
+                print("/etc/rc.#d folders not present on current system, skipping reboot persistence")
+                pass
 
 
     # Output ctfd jsons
