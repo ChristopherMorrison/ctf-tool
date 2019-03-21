@@ -48,7 +48,7 @@ Builds a CTFd config from a problem set and optionally installs the problem set 
 * some kind of more interactive way to setup
 * FBCTF output format
 * checkout some vulnerable vm generators and vulnhub for a self-randomizing event every time
-* Need to support flags that are hardcoded in challenges (different flag value for running server than in distributed zip)
+* [x] Need to support flags that are hardcoded in challenges (different flag value for running server than in distributed zip)
 
 ## Challenge packs/integrations
 * OTW challenges
