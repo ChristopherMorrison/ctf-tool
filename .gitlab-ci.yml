@@ -9,5 +9,5 @@ validate_challenges:
     script:
         - src/validate.py challenges/* -v
 
-# other_test
-# cont
+# build_test
+# install_test
