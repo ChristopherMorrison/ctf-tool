@@ -1,0 +1,4 @@
+Welcome to Krypton!
+All flags are the level passwords
+
+ This game is hosted at http://overthewire.org/wargames/krypton/
