@@ -4,9 +4,9 @@ before_script:
     - apt update
 
 
-install_test:
+validate_challenges:
     script:
-        - prinf "test\n"
+        - src/validate.py challenges/* -v
 
 # other_test
 # cont

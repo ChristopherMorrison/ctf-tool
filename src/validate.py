@@ -6,7 +6,7 @@ import os
 import sys
 import argparse
 
-def validate_ctf_directory(directory):
+def validate_ctf_directory(directory, verbose=True):
     valid_directory = True
 
     categories = [folder for folder in os.listdir(directory) if os.path.isdir(f"{directory}/{folder}")]
@@ -21,17 +21,17 @@ def validate_ctf_directory(directory):
                 fileList = os.listdir(dirname)
 
                 # Standard
-                if "challenge.zip" not in fileList:
-                    print(f"(optional) challenge.zip missing in {dirname}\n")
+                if "challenge.zip" not in fileList and verbose:
+                    print(f"(optional) challenge.zip missing in {dirname}")
                     #valid_directory = False
                 if "value.txt" not in fileList:
-                    print(f"value.txt missing in {dirname}\n")
+                    print(f"value.txt missing in {dirname}")
                     valid_directory = False
                 if "message.txt" not in fileList:
-                    print(f"message.txt missing in {dirname}\n")
+                    print(f"message.txt missing in {dirname}")
                     valid_directory = False
                 if "flag.txt" not in fileList:
-                    print(f"flag.txt missing in {dirname}\n")
+                    print(f"flag.txt missing in {dirname}")
                     valid_directory = False
                 
                 # Service-req
@@ -49,6 +49,7 @@ def validate_ctf_directory(directory):
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("directory")
+    parser.add_argument("directory", nargs="+")
+    parser.add_argument("-v", "--verbose", default=False, action='store_true')
     args = parser.parse_args()
-    sys.exit(validate_ctf_directory(args.directory))
+    sys.exit(0 in [validate_ctf_directory(dir, args.verbose) for dir in args.directory])
