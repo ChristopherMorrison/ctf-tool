@@ -1,0 +1,12 @@
+image: "debian"
+
+before_script:
+    - apt update
+
+
+install_test:
+    script:
+        - prinf "test\n"
+
+# other_test
+# cont
