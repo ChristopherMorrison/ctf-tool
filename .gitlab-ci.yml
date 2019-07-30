@@ -2,6 +2,7 @@ image: "debian"
 
 before_script:
     - apt update
+    - apt install -y python3
 
 
 validate_challenges:
