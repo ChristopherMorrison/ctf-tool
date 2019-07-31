@@ -189,6 +189,7 @@ def install_on_current_machine(challenge, new_user_home, address):
         shutil.copy2(challenge.server_zip_path, new_user_home)
         challenge.server_zip_path = os.path.join(new_user_home, "server.zip")
     shutil.copy2(challenge.requires_server_path, new_user_home)
+    # TODO: delete server.zip and requires-server after, or don't copy requires-server
     challenge.requires_server_path = os.path.join(new_user_home, "requires-server")
     # copy everything to new user's home dir
     # TODO: We should probably only copy a smaller zip to the user's home
@@ -200,9 +201,6 @@ def install_on_current_machine(challenge, new_user_home, address):
 
     os.system(f"chown -R root:root {new_user_home}")
     os.system(f"chmod -R 040 {new_user_home}")
-    os.system(f"chown root:{challenge.username} {new_user_home}/flag.txt")
-    os.system(f"chmod 020 {new_user_home}/flag.txt")
-
     required_vars = {"requires_server_path": challenge.requires_server_path,
                      "server_zip_path": challenge.server_zip_path,
                      "port": challenge.port,
@@ -225,6 +223,8 @@ def install_on_current_machine(challenge, new_user_home, address):
         # I might just change this to pass in the whole challenge object
         #setup_listener(**required_vars)
         setup_listener(challenge)
+        os.system(f"chown root:{challenge.username} {new_user_home}/flag.txt")
+        os.system(f"chmod 020 {new_user_home}/flag.txt")
         challenge.description += f"\n\nnc {address} {challenge.port}"
     except EmptyConfigFileError:
         print(f"\n\nThe requires-server file for the challenge: {challenge.username} is empty, "
