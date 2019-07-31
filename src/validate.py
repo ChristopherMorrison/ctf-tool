@@ -34,7 +34,7 @@ def validate_ctf_directory(directory, verbose=False):
                 
                 # Service-req
                 if "requires-server" in fileList:
-                    if "server.zip" not in fileList
+                    if "server.zip" not in fileList:
                         print(f"{dirname}: server.zip missing when requires-server specified")
                         valid_directory = False
                     #TODO: assert requires-server challenge in server.zip
