@@ -189,7 +189,6 @@ def install_on_current_machine(challenge, new_user_home, address):
         shutil.copy2(challenge.server_zip_path, new_user_home)
         challenge.server_zip_path = os.path.join(new_user_home, "server.zip")
     shutil.copy2(challenge.requires_server_path, new_user_home)
-    # TODO: delete server.zip and requires-server after, or don't copy requires-server
     challenge.requires_server_path = os.path.join(new_user_home, "requires-server")
     # copy everything to new user's home dir
     # TODO: We should probably only copy a smaller zip to the user's home
@@ -226,6 +225,8 @@ def install_on_current_machine(challenge, new_user_home, address):
         os.system(f"chown root:{challenge.username} {new_user_home}/flag.txt")
         os.system(f"chmod 020 {new_user_home}/flag.txt")
         challenge.description += f"\n\nnc {address} {challenge.port}"
+        os.remove(f"{new_user_home}/requires-server")
+        os.remove(f"{new_user_home}/server.zip")
     except EmptyConfigFileError:
         print(f"\n\nThe requires-server file for the challenge: {challenge.username} is empty, "
               f"skipping listener setup for that challenge")
