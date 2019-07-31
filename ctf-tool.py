@@ -196,12 +196,12 @@ def install_on_current_machine(challenge, new_user_home, address):
     # Clif: "Agreed", doing it with the server.zip and requires-server now
     # copytree(challenge.directory, new_user_home)
 
-    shutil.chown(new_user_home, user="root", group="root")
-    # NOTE: {chris->clif} Could we not have just used an os.system("chmod -r ///") call then
-    # changed the flag back?, also shouldn't we delay this call until we've finished moving files
-    # NOTE: {clif->chris} You right, I'll fix that.
+    # flag.txt perms are different
+
     os.system(f"chown -R root:root {new_user_home}")
     os.system(f"chmod -R 040 {new_user_home}")
+    os.system(f"chown root:{challenge.username} {new_user_home}/flag.txt")
+    os.system(f"chown 020 {new_user_home}/flag.txt")
 
     required_vars = {"requires_server_path": challenge.requires_server_path,
                      "server_zip_path": challenge.server_zip_path,
