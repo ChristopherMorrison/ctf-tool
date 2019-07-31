@@ -25,9 +25,9 @@ build_install:
 
 
 stages:
+    - build_install
 #    - validate_challenges
 #    - build_basic
-    - build_install
 
 
 # install_permissions_test
