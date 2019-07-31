@@ -52,4 +52,4 @@ if __name__=="__main__":
     parser.add_argument("directory", nargs="+")
     parser.add_argument("-v", "--verbose", default=False, action='store_true')
     args = parser.parse_args()
-    sys.exit(0 in [validate_ctf_directory(dir, args.verbose) for dir in args.directory])
+    sys.exit(1 in [validate_ctf_directory(dir, args.verbose) for dir in args.directory])
