@@ -6,29 +6,28 @@ before_script:
 
 
 validate_challenges:
-    stage: validate_challenges
+#    stage: validate_challenges
     script:
         - src/validate.py challenges/* --verbose
 
 
 build_basic:
-    stage: build_basic
+#    stage: build_basic
     script:
         - ./ctf-tool.py --address "ctf.cyberatuc.org" CTF.BASE.zip challenges/*
 
 
 build_install:
-    stage: build_install
+#    stage: build_install
     script:
         - ./ctf-tool.py --address "ctf.cyberatuc.org" CTF.BASE.zip challenges/test-challenge-pack/
         - ls -l /home/*
 
 
-stages:
-    - build_install
+#stages:
 #    - validate_challenges
 #    - build_basic
-
+#    - build_install
 
 # install_permissions_test
 # service test
