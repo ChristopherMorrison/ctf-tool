@@ -280,6 +280,7 @@ def main():
     parser.add_argument("--install", action="store_true", help="use the local machine as the challenge host")
     parser.add_argument("-d", "--docker", help="Install service challenges through docker", action='store_true')
     parser.add_argument("--address", nargs=1, help="Server address to list in CTFd for participants to connect to")
+    parser.add_argument("--name", default="ctf-tool", help="Name of the output zip file")
     args = parser.parse_args()
 
     # TODO:determine action(s) vs running a blob script
@@ -373,7 +374,7 @@ def main():
         shutil.copy2(os.path.join(temp_unzip_dir, "db", f), os.path.join(tempdirname, f))
     shutil.rmtree(temp_unzip_dir)
 
-    output_zip_name = os.path.join(os.getcwd(), "output", "CTF-name.zip")
+    output_zip_name = os.path.join(os.getcwd(), "output", f"{args.name}.ctfd.{time.strftime('%Y.%m.%d-%H:%M:%S')}.zip")
     os.system(f"cd {tempdirname}/.. && zip {output_zip_name} -r db/ uploads/*/*")
 
 

@@ -37,8 +37,7 @@ def validate_ctf_directory(directory, verbose=False):
                     if "server.zip" not in fileList:
                         print(f"{dirname}: server.zip missing when requires-server specified")
                         valid_directory = False
-                    #TODO: assert requires-server challenge in server.zip
-                    if open(f"{dirname}/requires-server").read().strip() not in zipfile.ZipFile(f"{dirname}/server.zip").namelist():
+                    elif open(f"{dirname}/requires-server").read().strip() not in zipfile.ZipFile(f"{dirname}/server.zip").namelist():
                         print(f"{dirname}: requires-server lists a binary not in server.zip")
                         valid_directory = False
                 # TODO: v2 Container-req

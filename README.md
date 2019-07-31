@@ -1,5 +1,5 @@
 # CTF-TOOL
-Finaly! A tool for building modular CTFs with minimum effort.
+Finally! A tool for building modular CTFs with minimum effort.
 
 
 # Concepts
@@ -47,7 +47,7 @@ sudo scripts/install_required_packages.sh
 
 # Tool instructions
 ## ctf-tool.py
-Builds a CTFd config from a problem set and optionally installs the problem set onto the local machine for socat connections. Meant to be a plug and play clone of the capability seen at Battelle/Hack Ohio 2017 CTF whit major extentions.
+Builds a CTFd config from a problem set and optionally installs the problem set onto the local machine for socat connections. Meant to be a plug and play clone of the capability seen at Battelle/Hack Ohio 2017 CTF whit major extentions. The default CTFd output will have the admin user **root** with password **root** after the new zip is uploaded to an existing instance.
 
 ## src/validate.py
 A simple mini-tool for validating that a challenge pack has been correctly made.
