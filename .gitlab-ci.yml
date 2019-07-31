@@ -10,16 +10,25 @@ validate_challenges:
     script:
         - src/validate.py challenges/* --verbose
 
+
 build_basic:
     stage: build_basic
     script:
         - ./ctf-tool.py --address "ctf.cyberatuc.org" CTF.BASE.zip challenges/*
 
+
+build_install:
+    stage: build_install
+    script:
+        - ./ctf-tool.py --address "ctf.cyberatuc.org" CTF.BASE.zip challenges/test-challenge-pack/
+
+
 stages:
     - validate_challenges
     - build_basic
+    - build_install
 
-# install_test
+
 # install_permissions_test
 # service test
 # docker test / 2.0
