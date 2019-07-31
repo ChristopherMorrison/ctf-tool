@@ -1,4 +1,4 @@
-#!usr/bin/env python3
+#!/usr/bin/env python3
 # Validates the directory structure of a given problem set
 import os
 import sys
