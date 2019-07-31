@@ -310,6 +310,7 @@ def main():
     # Add users to local machine (setup challenge host)
     if args.install is True:
         assert os.geteuid() == 0, "You must be root to install challenges!"
+        os.mkdir("/home")
         for challenge in challenges:
             challenge.requires_server_path = is_server_required(challenge.directory)
 
