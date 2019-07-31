@@ -20,7 +20,7 @@ build_basic:
 build_install:
 #    stage: build_install
     script:
-        - ./ctf-tool.py --address "ctf.cyberatuc.org" CTF.BASE.zip challenges/test-challenge-pack/
+        - ./ctf-tool.py --install --address "ctf.cyberatuc.org" CTF.BASE.zip challenges/test-challenge-pack/
         - ls -l /home/*
 
 
