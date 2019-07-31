@@ -201,7 +201,7 @@ def install_on_current_machine(challenge, new_user_home, address):
     os.system(f"chown -R root:root {new_user_home}")
     os.system(f"chmod -R 040 {new_user_home}")
     os.system(f"chown root:{challenge.username} {new_user_home}/flag.txt")
-    os.system(f"chown 020 {new_user_home}/flag.txt")
+    os.system(f"chmod 020 {new_user_home}/flag.txt")
 
     required_vars = {"requires_server_path": challenge.requires_server_path,
                      "server_zip_path": challenge.server_zip_path,
