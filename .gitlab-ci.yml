@@ -5,19 +5,13 @@ before_script:
     - apt install -y python3
 
 
-job 1:
-    stage: validate_challenges
+validate_challenges:
     script:
         - src/validate.py challenges/* --verbose
 
-job 2:
-    stage: build_basic
+build_basic:
     script:
-        - ./ctf-tool.py --address "ctf.cyberatuc.org" challenges/*
-
-stages:
-    - validate_challenges
-    - build_basic
+        - ./ctf-tool.py --address "ctf.cyberatuc.org" CTF.BASE.zip challenges/*
 
 # install_test
 # install_permissions_test
