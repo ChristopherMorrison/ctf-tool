@@ -282,7 +282,7 @@ def main():
     args = parser.parse_args()
 
     # TODO:determine action(s) vs running a blob script
-    pass
+    # this is a note for v2 to use the new parser/shell system in range-master
 
     # Validate the problem set
     validate_challenge_bundles(args)
@@ -295,7 +295,7 @@ def main():
 
     # Build file list (need to copy our files to the temp dir soon too)
     tempdirname, tempuploaddir = make_output_folder()
-
+    
     # Copy challenge files into our temp dir
     for chal in challenges:
         chal.copy_zip_file_to_temp(tempuploaddir)

@@ -77,18 +77,20 @@ class Challenge(object):
         return retVal
     
     def copy_zip_file_to_temp(self,tempdir):
-        filename = "_".join(self.name.split(" "))
-        os.makedirs(os.path.join(tempdir,filename))
-        shutil.copy2(
-            os.path.join(
-                self.directory,
-                "challenge.zip"
-            ),
-            os.path.join(
-                tempdir,
-                f"{filename}/{filename}.zip"
+        if os.path.exists(f"{self.directory}/challenge.zip"):
+            filename = "_".join(self.name.split(" "))
+            os.makedirs(os.path.join(tempdir,filename))
+            shutil.copy2(
+                os.path.join(
+                    self.directory,
+                    "challenge.zip"
+                ),
+                os.path.join(
+                    tempdir,
+                    f"{filename}/{filename}.zip"
+                )
             )
-        )
+        return
 
     def ctfd_file_list(self):
         retVal = _chal_rep()
