@@ -21,15 +21,16 @@ build_install:
 #    stage: build_install
     script:
         - ./ctf-tool.py --install --address "ctf.cyberatuc.org" CTF.BASE.zip challenges/test-challenge-pack/
-        - ls -l /home/*
-
+        - ls -lR /home/
+        # TODO: assert correct permissions and that no extra files are added
+        # TODO: note that v2 will use services which are easier to check
 
 #stages:
 #    - validate_challenges
 #    - build_basic
 #    - build_install
 
-# install_permissions_test
-# service test
-# docker test / 2.0
+# TODO: v2 systemd service test
+# TODO: v2 docker test
+# TODO: v2 ansible package test
 

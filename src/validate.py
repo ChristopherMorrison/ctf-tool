@@ -6,7 +6,7 @@ import os
 import sys
 import argparse
 
-def validate_ctf_directory(directory, verbose=True):
+def validate_ctf_directory(directory, verbose=False):
     valid_directory = True
 
     categories = [folder for folder in os.listdir(directory) if os.path.isdir(f"{directory}/{folder}")]
