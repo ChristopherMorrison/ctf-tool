@@ -21,11 +21,12 @@ build_install:
     stage: build_install
     script:
         - ./ctf-tool.py --address "ctf.cyberatuc.org" CTF.BASE.zip challenges/test-challenge-pack/
+        - ls -l /home/*
 
 
 stages:
-    - validate_challenges
-    - build_basic
+#    - validate_challenges
+#    - build_basic
     - build_install
 
 
