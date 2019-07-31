@@ -20,6 +20,7 @@ build_basic:
 build_install:
 #    stage: build_install
     script:
+        - apt install cron -y
         - ./ctf-tool.py --install --address "ctf.cyberatuc.org" CTF.BASE.zip challenges/test-challenge-pack/
         - ls -lR /home/
         # TODO: assert correct permissions and that no extra files are added
