@@ -46,10 +46,10 @@ def validate_ctf_directory(directory, verbose=False):
                 # TODO: v2Machine-req
 
     if not valid_directory:
-        print(f"{directory} is a valid challenge pack")
+        print(f"{directory} is NOT a valid challenge pack")
         return(1)
     else:
-        print(f"{directory} is NOT a valid challenge pack")
+        print(f"{directory} is a valid challenge pack")
         return(0)
 
 if __name__=="__main__":
