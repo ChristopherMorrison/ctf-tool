@@ -6,7 +6,7 @@
 			flag.txt      - the challenge's flag
 			message.txt   - the message to show on ctfd for the problem
 			value.txt     - the point value of the challenge
-			challenge.zip - zip file for users to download -- TODO: rename to the problem name
+			challenge.zip - zip file for users to download, is renamed to <problem name>.zip when added so users can track files easier
 			server.zip    - zip file that contains all of the relevant files for running a problem as a nc server. A copy of the binary and flag should be in here.
 			solution.txt  - (unimp) details on how to solve the challenge
 			hint_<x>.txt  - (unimp) Hint file where x is the order the hints should be given

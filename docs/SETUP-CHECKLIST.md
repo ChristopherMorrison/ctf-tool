@@ -1,3 +1,6 @@
+# SETUP CHECKLIST
+a simple checklist for hosting a real ctfd instance with this tool, do these post-zip upload
+
 # TBD items
 * SSL/DNS for the CTFd instance
 * IP for the Challenge host, can probably go static and have ACM pay for it
@@ -10,6 +13,7 @@
 
 ## Accounts
 1. Verify emails is enabled
+2. Change default admin account from root:root
 
 ## Settings
 1. Challenge Visibility is public
@@ -28,7 +32,8 @@
 1. Make sure the challenges list has been imported successfully
 
 # Challenge host setup
-TODO:
+1. Make sure the challenges are up with `sudo netstat -plant`
+2. Make sure flags have permissions `-----r---- root:challenge_name`
 
 # CTF run crew checklist
 1. Verify everyone who is on the run crew has admin access to CTFd and the challenge host
@@ -39,4 +44,3 @@ TODO:
 1. Make sure the challenge host has been stopped and deleted one hour after the event ends
 2. Make sure the CTFd instance is stopped one day after the event
 3. Make sure the dns name (if any) has been redirected properly to cyberatuc.org
-

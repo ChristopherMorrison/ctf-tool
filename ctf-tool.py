@@ -35,8 +35,7 @@ def get_challenge_list(args):
                     chal = Challenge(os.path.join(problem_dir, category, challenge))
                     if chal.name in challenge_names:
                         print(f"Two or more challenges named {chal.name}")
-                        # This is because of the zip file names for challenge.zip not being
-                        # hash based. This may also be a limitation of CTFd #TODO
+                        # TODO: v2 This is because of the zip file names for challenge.zip not being hash based. This may also be a limitation of CTFd, need to investigate
                         quit(1)
                     challenges.append(chal)
                     challenge_names.append(chal.name)
@@ -191,12 +190,8 @@ def install_on_current_machine(challenge, new_user_home, address):
     shutil.copy2(challenge.requires_server_path, new_user_home)
     challenge.requires_server_path = os.path.join(new_user_home, "requires-server")
     # copy everything to new user's home dir
-    # TODO: We should probably only copy a smaller zip to the user's home
-    # then run some predefined script per challenge
-    # Clif: "Agreed", doing it with the server.zip and requires-server now
-    # copytree(challenge.directory, new_user_home)
 
-    # flag.txt perms are different
+    # note that flag.txt perms are different than the executable
 
     os.system(f"chown -R root:root {new_user_home}")
     os.system(f"chmod -R 040 {new_user_home}")
@@ -219,8 +214,7 @@ def install_on_current_machine(challenge, new_user_home, address):
         print("")
         return
     try:
-        # I might just change this to pass in the whole challenge object
-        #setup_listener(**required_vars)
+        # Setup crontab and file permissions
         setup_listener(challenge)
         os.system(f"chown root:{challenge.username} {new_user_home}/flag.txt")
         os.system(f"chmod 020 {new_user_home}/flag.txt")
@@ -271,10 +265,12 @@ def create_challenge_docker_env(path, challenges):
 
 def main():
     # CLI Parser
+    # TODO: v2 make this like the range-master parser so it's easier to extend
     parser = argparse.ArgumentParser()
-    parser.add_argument("basezip",
+    parser.add_argument("--basezip",
                         help="Zip file to pull ctfd metadata from, use a fresh CTFd instance export if you need one",
-                        nargs=1)
+                        nargs=1,
+                        default=["resources/ctfd.base.zip"])
     parser.add_argument("directory", help="Directories of challenge packs to load", nargs="+")
     parser.add_argument("--force", action="store_true", help="ignore challenge pack validation errors")
     parser.add_argument("--install", action="store_true", help="use the local machine as the challenge host")
@@ -283,8 +279,7 @@ def main():
     parser.add_argument("--name", default="ctf-tool", help="Name of the output zip file")
     args = parser.parse_args()
 
-    # TODO:determine action(s) vs running a blob script
-    # this is a note for v2 to use the new parser/shell system in range-master
+    # TODO:determine action(s) vs running a blob script this is a note for v2 to use the new parser/shell system in range-master
 
     # Validate the problem set
     validate_challenge_bundles(args)
