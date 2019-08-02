@@ -9,19 +9,13 @@ import zipfile
 import time
 import tempfile
 import pickle
+import shlex
 from src.validate import validate_ctf_directory
 from src.challenge import Challenge
 from src.util import EmptyConfigFileError
 
 
-def validate_challenge_bundles(args):
-    """ Validates all specified directories in args.directories """
-    for challenge_pack in args.directory:
-        problem_dir = os.path.join(os.getcwd(), challenge_pack)
-        if validate_ctf_directory(problem_dir) != 0 and args.force is not True:
-            quit(1)
-
-
+# CTFd Util functions
 def get_challenge_list(args):
     """ Builds a list of challenge objects from all challenge bundles in args.directory """
     challenges = []
@@ -54,7 +48,7 @@ def get_flag_list(challenges):
     return challenge_flag_list
 
 
-def make_output_folder():
+def make_ctfd_output_folder():
     """ Builds a temporary output folder to copy challenge data into before zip"""
     tempdirname = os.path.join("output", time.strftime("%Y.%m.%d-%H:%M:%S"))
     tempuploaddir = os.path.join(tempdirname, "uploads")
@@ -64,7 +58,7 @@ def make_output_folder():
     return tempdirname, tempuploaddir
 
 
-def output_csv(challenges):
+def output_ctfd_csv(challenges): # TODO: unused
     """ Writes the csv format of the ctfd challenges to disk"""
     chal_file = open("challenges.csv", "w")
     chal_file.write(f"id,name,description,max_attempts,value,category,type,state,requirements\n")
@@ -73,7 +67,7 @@ def output_csv(challenges):
     chal_file.close()
 
 
-def dump_to_ctfd_json(not_challenges):
+def dump_to_ctfd_json(not_challenges): # TODO: "not_challenges" is confusing
     chal_dict = dict()
     chal_dict['count'] = len(not_challenges)
     chal_dict['results'] = []
@@ -83,42 +77,8 @@ def dump_to_ctfd_json(not_challenges):
     return chal_dict
 
 
-def force_valid_username(name):
-    """force replace certain special characters with _, force to lowercase,
-    truncate username if it is over 30 characters. Some people think they are super clever when
-    they use accents in their challenge names. (╯°□°）╯︵ ┻━┻"""
-    resulting_username = re.sub("[^A-Za-z0-9_-]", "_", name)
-    if resulting_username is None:
-        resulting_username = name
-    if len(resulting_username) > 30:
-        resulting_username = resulting_username[:30]
-    return resulting_username.lower()
-
-
-def copytree(src, dst, symlinks=False, ignore=None):
-    """Handles the root dir already existing
-    https://stackoverflow.com/questions/1868714/how-do-i-copy-an
-    -entire-directory-of-files-into-an-existing-directory-using-pyth"""
-    for item in os.listdir(src):
-        s = os.path.join(src, item)
-        d = os.path.join(dst, item)
-        if os.path.isdir(s):
-            shutil.copytree(s, d, symlinks, ignore)
-        else:
-            shutil.copy2(s, d)
-
-
-def get_binary_path_from_requires_server_string(requires_server_string):
-    requires_server_args = requires_server_string.split(" ")
-    if len(requires_server_args) > 1:
-        binary_path = requires_server_args[1]
-    else:
-        binary_path = requires_server_args[0]
-
-    return binary_path
-
-
-def setup_listener(challenge):
+# Server challenge installation (cron)
+def setup_listener(challenge): # TODO: break into smaller functions, this does a lot
     """sets up listeners"""
     if challenge.server_zip_path is not None:
         zip_ref = zipfile.ZipFile(challenge.server_zip_path, "r")
@@ -130,10 +90,9 @@ def setup_listener(challenge):
 
     binary_path = get_binary_path_from_requires_server_string(challenge.requires_server_string)
     # change perms for binary
-    shutil.chown(binary_path, user="root", group="root")
-    os.chmod(binary_path, 0o755)
+    #shutil.chown(binary_path, user="root", group="root")
+    #os.chmod(binary_path, 0o755)
     # create crontab
-
     create_user_crontab(challenge.crontab_path, challenge.listener_command, challenge.username)
 
 
@@ -158,6 +117,47 @@ def install_cron_reboot_persist():
         os.symlink(new_reboot_persist_path, symlink_path.format(init_no))
 
 
+# Server challenge installation (files)
+def get_binary_path_from_requires_server_string(requires_server_string):
+    """
+    Gets the binary to run from the requires-server file. Tries to be smart with interpreters
+    TODO: force shebang lines to simplify this
+    """
+    requires_server_args = shlex.split(requires_server_string)
+    if len(requires_server_args) > 1:
+        binary_path = requires_server_args[1]
+    else:
+        binary_path = requires_server_args[0]
+
+    return binary_path
+
+
+def copytree(src, dst, symlinks=False, ignore=None):
+    """
+    Handles the root dir already existing
+    https://stackoverflow.com/questions/1868714/how-do-i-copy-an-entire-directory-of-files-into-an-existing-directory-using-pyth
+    """
+    for item in os.listdir(src):
+        s = os.path.join(src, item)
+        d = os.path.join(dst, item)
+        if os.path.isdir(s):
+            shutil.copytree(s, d, symlinks, ignore)
+        else:
+            shutil.copy2(s, d)
+
+
+def force_valid_username(name):
+    """force replace certain special characters with _, force to lowercase,
+    truncate username if it is over 30 characters. Some people think they are super clever when
+    they use accents in their challenge names. (╯°□°）╯︵ ┻━┻"""
+    resulting_username = re.sub("[^A-Za-z0-9_-]", "_", name)
+    if resulting_username is None:
+        resulting_username = name
+    if len(resulting_username) > 30:
+        resulting_username = resulting_username[:30]
+    return resulting_username.lower()
+
+
 def install_listener_script():
     # copy listener script to install location
     listener_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "scripts", "challenge-listener.py")
@@ -180,6 +180,7 @@ def is_server_required(path):
 
 
 def install_on_current_machine(challenge, new_user_home, address):
+    # add user and copy everything to new user's home dir
     os.system("useradd -m {:s}".format(challenge.username))
     if not os.path.exists(challenge.server_zip_path):
         # Directory is missing server.zip, but letting execution continue so that the user is warned
@@ -189,18 +190,14 @@ def install_on_current_machine(challenge, new_user_home, address):
         challenge.server_zip_path = os.path.join(new_user_home, "server.zip")
     shutil.copy2(challenge.requires_server_path, new_user_home)
     challenge.requires_server_path = os.path.join(new_user_home, "requires-server")
-    # copy everything to new user's home dir
-
-    # note that flag.txt perms are different than the executable
-
-    os.system(f"chown -R root:root {new_user_home}")
-    os.system(f"chmod -R 040 {new_user_home}")
+    
+    # I forget what this does
     required_vars = {"requires_server_path": challenge.requires_server_path,
                      "server_zip_path": challenge.server_zip_path,
                      "port": challenge.port,
                      "crontab_path": challenge.crontab_path,
-                     "username": challenge.username}
-
+                     "username": challenge.username}    
+    
     empty_required_keys = list()
     for key in list(required_vars.keys()):
         if required_vars[key] is None:
@@ -214,10 +211,10 @@ def install_on_current_machine(challenge, new_user_home, address):
         print("")
         return
     try:
-        # Setup crontab and file permissions
+        # Setup crontab
         setup_listener(challenge)
-        os.system(f"chown root:{challenge.username} {new_user_home}/flag.txt")
-        os.system(f"chmod 020 {new_user_home}/flag.txt")
+        #os.system(f"chown root:{challenge.username} {new_user_home}/flag.txt")
+        #os.system(f"chmod 020 {new_user_home}/flag.txt")
         challenge.description += f"\n\nnc {address} {challenge.port}"
         os.remove(f"{new_user_home}/requires-server")
         os.remove(f"{new_user_home}/server.zip")
@@ -225,8 +222,14 @@ def install_on_current_machine(challenge, new_user_home, address):
         print(f"\n\nThe requires-server file for the challenge: {challenge.username} is empty, "
               f"skipping listener setup for that challenge")
         raise EmptyConfigFileError
+    
+    # Set permissions on user dir (root:challenge_user -rx-rx---)
+    # TODO: use the python equivalent although this is pretty much universal
+    os.system(f"chown -R root:{challenge.username} {new_user_home}") 
+    os.system(f"chmod -R 550 {new_user_home}")
 
 
+# Docker challenge installation TODO v2
 def create_challenge_docker_env(path, challenges):
     docker_compose_str = "version: '3.3'\nservices:\n"
     dockerenv_path = os.path.join(path, "dockerenv")
@@ -263,6 +266,7 @@ def create_challenge_docker_env(path, challenges):
         f.write(docker_compose_str)
 
 
+# Main
 def main():
     # CLI Parser
     # TODO: v2 make this like the range-master parser so it's easier to extend
@@ -279,19 +283,19 @@ def main():
     parser.add_argument("--name", default="ctf-tool", help="Name of the output zip file")
     args = parser.parse_args()
 
-    # TODO:determine action(s) vs running a blob script this is a note for v2 to use the new parser/shell system in range-master
-
     # Validate the problem set
-    validate_challenge_bundles(args)
+    if any([validate_ctf_directory(dir) for dir in args.directory]):
+        quit(1)
 
-    # Search through our challenge directory and build our list of challenges
+    # Search through our challenge directory and build our list of challenge objects
     challenges = get_challenge_list(args)
 
+    # CTFd
     # Build the flag list
     challenge_flag_list = get_flag_list(challenges)
 
     # Build file list (need to copy our files to the temp dir soon too)
-    tempdirname, tempuploaddir = make_output_folder()
+    tempdirname, tempuploaddir = make_ctfd_output_folder()
     
     # Copy challenge files into our temp dir
     for chal in challenges:
@@ -303,7 +307,6 @@ def main():
         challenge_file_list[i].id = i + 1
 
     # Installation
-
     # Add users to local machine (setup challenge host)
     if args.install is True:
         assert os.geteuid() == 0, "You must be root to install challenges!"
@@ -325,15 +328,14 @@ def main():
             os.system("docker-compose build && docker-compose up -d")
             os.chdir(os.path.abspath(os.path.dirname(os.getcwd())))
         else:
-
             for challenge in challenges:
+                # TODO: v2 make this a factory method with something like challenge.type
                 if challenge.requires_server_path is not None:
                     new_user_home = os.path.join("/home/", challenge.username)
                     try:
                         install_on_current_machine(challenge, new_user_home, args.address)
                     except EmptyConfigFileError:
                         continue
-
             install_listener_script()
             try:
                 install_cron_reboot_persist()
@@ -341,10 +343,8 @@ def main():
                 pass
             except FileNotFoundError:
                 print("/etc/rc.#d folders not present on current system, skipping reboot persistence")
-                pass
 
-
-    # Output ctfd jsons
+    # Output CTFd jsons
     with open(f"{tempdirname}/challenges.json", "w") as chal_json:
         _json_repr_challenges = [chal.ctfd_repr() for chal in challenges]
         json.dump(dump_to_ctfd_json(_json_repr_challenges), chal_json)

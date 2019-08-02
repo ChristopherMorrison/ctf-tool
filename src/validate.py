@@ -51,9 +51,13 @@ def validate_ctf_directory(directory, verbose=False):
         print(f"{directory} is a valid challenge pack")
         return(0)
 
+
 if __name__=="__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("directory", nargs="+")
     parser.add_argument("-v", "--verbose", default=False, action='store_true')
     args = parser.parse_args()
-    sys.exit(1 in [validate_ctf_directory(dir, args.verbose) for dir in args.directory])
+
+    check_list = [validate_ctf_directory(dir, args.verbose) for dir in args.directory]
+
+    sys.exit(any(check_list))
