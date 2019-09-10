@@ -10,6 +10,7 @@ import time
 import tempfile
 import pickle
 import shlex
+import textwrap
 from src.validate import validate_ctf_directory
 from src.challenge import Challenge
 from src.util import EmptyConfigFileError
@@ -115,6 +116,33 @@ def install_cron_reboot_persist():
     symlink_path = "/etc/rc{:d}.d/CRON_REBOOT_PERSIST"
     for init_no in range(0, 7):
         os.symlink(new_reboot_persist_path, symlink_path.format(init_no))
+
+
+def install_systemd_service(command, username):
+    """
+        Creates a new service called <username>.service and
+    """
+    systemd_unitfile = f"""[Unit]
+                           Description=Run {command} as user {username}
+
+                           [Service]
+                           User={username}
+                           Type=exec
+                           ExecStart={command}
+                           ExecReload=/bin/kill -1 -- $MAINPID
+                           ExecStop=/bin/kill -- $MAINPID
+                           KillMode=process
+                           Restart=on-failure
+                        
+                           [Install]
+                           WantedBy=multi-user.target"""
+    systemd_unitfile = textwrap.dedent(systemd_unitfile)
+    systemd_unit_path = f"/etc/systemd/system/{username}.service"
+    with open(systemd_unit_path, "w") as f:
+        f.write(systemd_unitfile)
+    os.chmod(systemd_unit_path, 0o644)
+    os.system("systemctl daemon-reload")
+    os.system(f"systemctl enable {username}.service")
 
 
 # Server challenge installation (files)
