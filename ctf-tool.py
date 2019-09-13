@@ -93,8 +93,9 @@ def setup_listener(challenge): # TODO: break into smaller functions, this does a
     # change perms for binary
     #shutil.chown(binary_path, user="root", group="root")
     #os.chmod(binary_path, 0o755)
+    install_systemd_service(challenge.listener_command, challenge.username)
     # create crontab
-    create_user_crontab(challenge.crontab_path, challenge.listener_command, challenge.username)
+    # create_user_crontab(challenge.crontab_path, challenge.listener_command, challenge.username)
 
 
 def create_user_crontab(crontab_path, command, username):
