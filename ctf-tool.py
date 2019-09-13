@@ -131,9 +131,8 @@ def install_systemd_service(command, username):
                            ExecStart={command}
                            ExecReload=/bin/kill -1 -- $MAINPID
                            ExecStop=/bin/kill -- $MAINPID
-                           KillMode=process
-                           Restart=on-failure
-                        
+                           KillMode=mixed
+
                            [Install]
                            WantedBy=multi-user.target"""
     systemd_unitfile = textwrap.dedent(systemd_unitfile)
@@ -142,7 +141,7 @@ def install_systemd_service(command, username):
         f.write(systemd_unitfile)
     os.chmod(systemd_unit_path, 0o644)
     os.system("systemctl daemon-reload")
-    os.system(f"systemctl enable {username}.service")
+    os.system(f"systemctl enable {username}.service --now")
 
 
 # Server challenge installation (files)
