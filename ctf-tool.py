@@ -357,7 +357,7 @@ def main():
                 challenge.crontab_path = os.path.join("/var/spool/cron/crontabs", challenge.username)
                 challenge.set_requires_server_string()
                 challenge.set_listener_command()
-        if args.docker is True:
+        if args.install_docker is True:
             challenges_requiring_server = [challenge for challenge in challenges if challenge.requires_server_path is not None]
             create_challenge_docker_env(os.getcwd(), challenges_requiring_server)
             os.chdir("dockerenv")
