@@ -79,7 +79,7 @@ def dump_to_ctfd_json(not_challenges): # TODO: "not_challenges" is confusing
 
 
 # Server challenge installation (cron)
-def setup_listener(challenge): # TODO: break into smaller functions, this does a lot
+def setup_listener(challenge, cron=False): # TODO: break into smaller functions, this does a lot
     """sets up listeners"""
     if challenge.server_zip_path is not None:
         zip_ref = zipfile.ZipFile(challenge.server_zip_path, "r")
@@ -93,9 +93,12 @@ def setup_listener(challenge): # TODO: break into smaller functions, this does a
     # change perms for binary
     #shutil.chown(binary_path, user="root", group="root")
     #os.chmod(binary_path, 0o755)
-    install_systemd_service(challenge.listener_command, challenge.username)
-    # create crontab
-    # create_user_crontab(challenge.crontab_path, challenge.listener_command, challenge.username)
+    if cron:
+        # create crontab
+        create_user_crontab(challenge.crontab_path, challenge.listener_command, challenge.username)
+    else:
+        # create systemd service
+        install_systemd_service(challenge.listener_command, challenge.username)
 
 
 def create_user_crontab(crontab_path, command, username):
@@ -207,7 +210,7 @@ def is_server_required(path):
     return requires_server_path
 
 
-def install_on_current_machine(challenge, new_user_home, address):
+def install_on_current_machine(challenge, new_user_home, address, cron=False):
     # add user and copy everything to new user's home dir
     os.system("useradd -m {:s}".format(challenge.username))
     if not os.path.exists(challenge.server_zip_path):
@@ -240,7 +243,7 @@ def install_on_current_machine(challenge, new_user_home, address):
         return
     try:
         # Setup crontab
-        setup_listener(challenge)
+        setup_listener(challenge, cron=cron)
         #os.system(f"chown root:{challenge.username} {new_user_home}/flag.txt")
         #os.system(f"chmod 020 {new_user_home}/flag.txt")
         challenge.description += f"\n\nnc {address} {challenge.port}"
@@ -304,11 +307,16 @@ def main():
                         nargs=1,
                         default=["resources/ctfd.base.zip"])
     parser.add_argument("directory", help="Directories of challenge packs to load", nargs="+")
+    
     parser.add_argument("--force", action="store_true", help="ignore challenge pack validation errors")
-    parser.add_argument("--install", action="store_true", help="use the local machine as the challenge host")
-    parser.add_argument("-d", "--docker", help="Install service challenges through docker", action='store_true')
     parser.add_argument("--address", nargs=1, help="Server address to list in CTFd for participants to connect to")
     parser.add_argument("--name", default="ctf-tool", help="Name of the output zip file")
+
+    _install_group = parser.add_mutually_exclusive_group()
+    _install_group.add_argument("--install-cron", action="store_true", help="Install ctf services as cron")
+    _install_group.add_argument("--install-service", action="store_true", help="Install service challenges as services")
+    _install_group.add_argument("--install-docker", action='store_true', help="Install service challenges through docker")
+    
     args = parser.parse_args()
 
     # Validate the problem set
@@ -336,7 +344,7 @@ def main():
 
     # Installation
     # Add users to local machine (setup challenge host)
-    if args.install is True:
+    if any([args.install_cron, args.install_service, args.install_docker]):
         assert os.geteuid() == 0, "You must be root to install challenges!"
         for challenge in challenges:
             challenge.requires_server_path = is_server_required(challenge.directory)
@@ -361,7 +369,7 @@ def main():
                 if challenge.requires_server_path is not None:
                     new_user_home = os.path.join("/home/", challenge.username)
                     try:
-                        install_on_current_machine(challenge, new_user_home, args.address)
+                        install_on_current_machine(challenge, new_user_home, args.address, cron=(args.install_cron==True))
                     except EmptyConfigFileError:
                         continue
             install_listener_script()
