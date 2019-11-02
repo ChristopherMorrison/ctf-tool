@@ -10,6 +10,7 @@ import time
 import tempfile
 import pickle
 import shlex
+import textwrap
 from src.validate import validate_ctf_directory
 from src.challenge import Challenge
 from src.util import EmptyConfigFileError
@@ -78,7 +79,7 @@ def dump_to_ctfd_json(not_challenges): # TODO: "not_challenges" is confusing
 
 
 # Server challenge installation (cron)
-def setup_listener(challenge): # TODO: break into smaller functions, this does a lot
+def setup_listener(challenge, cron=False): # TODO: break into smaller functions, this does a lot
     """sets up listeners"""
     if challenge.server_zip_path is not None:
         zip_ref = zipfile.ZipFile(challenge.server_zip_path, "r")
@@ -92,8 +93,12 @@ def setup_listener(challenge): # TODO: break into smaller functions, this does a
     # change perms for binary
     #shutil.chown(binary_path, user="root", group="root")
     #os.chmod(binary_path, 0o755)
-    # create crontab
-    create_user_crontab(challenge.crontab_path, challenge.listener_command, challenge.username)
+    if cron:
+        # create crontab
+        create_user_crontab(challenge.crontab_path, challenge.listener_command, challenge.username)
+    else:
+        # create systemd service
+        install_systemd_service(challenge.listener_command, challenge.username)
 
 
 def create_user_crontab(crontab_path, command, username):
@@ -115,6 +120,32 @@ def install_cron_reboot_persist():
     symlink_path = "/etc/rc{:d}.d/CRON_REBOOT_PERSIST"
     for init_no in range(0, 7):
         os.symlink(new_reboot_persist_path, symlink_path.format(init_no))
+
+
+def install_systemd_service(command, username):
+    """
+        Creates a new service called <username>.service and
+    """
+    systemd_unitfile = f"""[Unit]
+                           Description=Run {command} as user {username}
+
+                           [Service]
+                           User={username}
+                           Type=exec
+                           ExecStart={command}
+                           ExecReload=/bin/kill -1 -- $MAINPID
+                           ExecStop=/bin/kill -- $MAINPID
+                           KillMode=mixed
+
+                           [Install]
+                           WantedBy=multi-user.target"""
+    systemd_unitfile = textwrap.dedent(systemd_unitfile)
+    systemd_unit_path = f"/etc/systemd/system/{username}.service"
+    with open(systemd_unit_path, "w") as f:
+        f.write(systemd_unitfile)
+    os.chmod(systemd_unit_path, 0o644)
+    os.system("systemctl daemon-reload")
+    os.system(f"systemctl enable {username}.service --now")
 
 
 # Server challenge installation (files)
@@ -179,7 +210,7 @@ def is_server_required(path):
     return requires_server_path
 
 
-def install_on_current_machine(challenge, new_user_home, address):
+def install_on_current_machine(challenge, new_user_home, address, cron=False):
     # add user and copy everything to new user's home dir
     os.system("useradd -m {:s}".format(challenge.username))
     if not os.path.exists(challenge.server_zip_path):
@@ -212,7 +243,7 @@ def install_on_current_machine(challenge, new_user_home, address):
         return
     try:
         # Setup crontab
-        setup_listener(challenge)
+        setup_listener(challenge, cron=cron)
         #os.system(f"chown root:{challenge.username} {new_user_home}/flag.txt")
         #os.system(f"chmod 020 {new_user_home}/flag.txt")
         challenge.description += f"\n\nnc {address} {challenge.port}"
@@ -276,11 +307,16 @@ def main():
                         nargs=1,
                         default=["resources/ctfd.base.zip"])
     parser.add_argument("directory", help="Directories of challenge packs to load", nargs="+")
+    
     parser.add_argument("--force", action="store_true", help="ignore challenge pack validation errors")
-    parser.add_argument("--install", action="store_true", help="use the local machine as the challenge host")
-    parser.add_argument("-d", "--docker", help="Install service challenges through docker", action='store_true')
     parser.add_argument("--address", nargs=1, help="Server address to list in CTFd for participants to connect to")
     parser.add_argument("--name", default="ctf-tool", help="Name of the output zip file")
+
+    _install_group = parser.add_mutually_exclusive_group()
+    _install_group.add_argument("--install-cron", action="store_true", help="Install ctf services as cron")
+    _install_group.add_argument("--install-service", action="store_true", help="Install service challenges as services")
+    _install_group.add_argument("--install-docker", action='store_true', help="Install service challenges through docker")
+    
     args = parser.parse_args()
 
     # Validate the problem set
@@ -308,7 +344,7 @@ def main():
 
     # Installation
     # Add users to local machine (setup challenge host)
-    if args.install is True:
+    if any([args.install_cron, args.install_service, args.install_docker]):
         assert os.geteuid() == 0, "You must be root to install challenges!"
         for challenge in challenges:
             challenge.requires_server_path = is_server_required(challenge.directory)
@@ -321,7 +357,7 @@ def main():
                 challenge.crontab_path = os.path.join("/var/spool/cron/crontabs", challenge.username)
                 challenge.set_requires_server_string()
                 challenge.set_listener_command()
-        if args.docker is True:
+        if args.install_docker is True:
             challenges_requiring_server = [challenge for challenge in challenges if challenge.requires_server_path is not None]
             create_challenge_docker_env(os.getcwd(), challenges_requiring_server)
             os.chdir("dockerenv")
@@ -333,7 +369,7 @@ def main():
                 if challenge.requires_server_path is not None:
                     new_user_home = os.path.join("/home/", challenge.username)
                     try:
-                        install_on_current_machine(challenge, new_user_home, args.address)
+                        install_on_current_machine(challenge, new_user_home, args.address, cron=(args.install_cron==True))
                     except EmptyConfigFileError:
                         continue
             install_listener_script()
