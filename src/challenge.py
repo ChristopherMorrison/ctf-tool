@@ -3,20 +3,19 @@ import random
 import shutil
 import tempfile
 import re
-from src.util import EmptyConfigFileError
 import textwrap
+from typing import List
 
-# literally just a token class
+from src.util import EmptyConfigFileError
+from src.util import contents_of
+
+
+# literally just a token class for challenge to abuse
+# TODO: there is probably a way around using this
 class _chal_rep(object):
     def __init__(self):
         return
 
-# eat a txt file
-def contents_of(file):
-    try:
-        return open(file).read().strip()
-    except:
-        return None
 
 class Challenge(object):
     def __init__(self, abs_directory):
@@ -149,4 +148,36 @@ class Challenge(object):
 
         with open(out_path, "w") as f:
             f.write(dockerfile_template)
+
+
+def get_challenge_list(directory_list: List[str]) -> List[Challenge]:
+    """ Builds a list of challenge objects from all challenge bundles in args.directory """
+    challenges = []
+    challenge_names = []
+    for challenge_pack in directory_list:
+        problem_dir = os.path.join(os.getcwd(), challenge_pack)
+        category_dirs = [dir for dir in os.listdir(problem_dir) if os.path.isdir(os.path.join(problem_dir, dir))]
+        for category in category_dirs:
+            for challenge in os.listdir(os.path.join(problem_dir, category)):
+                if os.path.isdir(os.path.join(problem_dir, category, challenge)):
+                    chal = Challenge(os.path.join(problem_dir, category, challenge))
+                    if chal.name in challenge_names:
+                        print(f"Two or more challenges named {chal.name}")
+                        # TODO: v2 This is because of the zip file names for challenge.zip not being hash based. This may also be a limitation of CTFd, need to investigate
+                        quit(1)
+                    challenges.append(chal)
+                    challenge_names.append(chal.name)
+    for i in range(len(challenges)):
+        challenges[i].id = i + 1
+    return challenges
+
+
+def get_flag_list(challenges: List[Challenge]):
+    """Builds a list of objects from challenges that dump nicely into json for CTFd """
+    challenge_flag_list = []
+    challenge_flag_list = [chal.ctfd_flag_repr() for chal in challenges]
+    challenge_flag_list = [flag for flag in challenge_flag_list if flag is not None]
+    for i in range(len(challenge_flag_list)):
+        challenge_flag_list[i].id = i + 1
+    return challenge_flag_list
 
