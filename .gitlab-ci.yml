@@ -1,4 +1,4 @@
-image: "debian"
+image: "python:3.7-stretch"
 
 before_script:
     - scripts/install_required_packages.sh
