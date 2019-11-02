@@ -2,6 +2,7 @@ image: "debian"
 
 before_script:
     - scripts/install_required_packages.sh
+    - pip3 install -r requirements.txt
 
 
 validate_challenges:
