@@ -211,7 +211,7 @@ def create_user_crontab(crontab_path, command, username):
 
 
 def install_cron_reboot_persist():
-    reboot_persist_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "scripts", "reboot_persist.sh")
+    reboot_persist_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "..", "..", "scripts", "reboot_persist.sh")
 
     shutil.copy2(reboot_persist_path, "/usr/local/bin/")
     new_reboot_persist_path = os.path.join("/usr/local/bin/", "reboot_persist.sh")
@@ -290,7 +290,7 @@ def force_valid_username(name):
 
 def install_listener_script():
     # copy listener script to install location
-    listener_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "scripts", "challenge-listener.py")
+    listener_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "..", "..", "scripts", "challenge-listener.py")
     shutil.copy2(listener_path, "/usr/local/bin/")
     new_listener_path = os.path.join("/usr/local/bin/", "challenge-listener.py")
     os.chmod(new_listener_path, 0o755)
@@ -364,9 +364,11 @@ def create_challenge_docker_env(path, challenges):
     docker_compose_str = "version: '3.3'\nservices:\n"
     dockerenv_path = os.path.join(path, "dockerenv")
     listener_script_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                        "..", ".."
                                         "scripts",
                                         "challenge-listener.py")
     required_package_script_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                                "..", "..",
                                                 "scripts",
                                                 "install_required_packages.sh")
     os.mkdir(dockerenv_path)
