@@ -17,20 +17,23 @@ class BaseCommand(ABC):
         parser.add_argument("subcommand",
                             choices=[f[3:] for f in dir(self) if f.startswith("do_")])
         return parser
-        
+    
+    def __call__(self):
+        # returning none for subparser() lets the Command Object be called directly
+        pass
+
     def run_command(self, argline):
-        try:
+        if self.subparser() is not None:
             # New test that dynamically rips the do_x choices from the local class
             # more compact implementation of the db subcommand parser that isn't a billion if statements
             args = self.subparser().parse_args(argline[:1])
             real_func = getattr(self, f"do_{args.subcommand}", None)
             return real_func(argline[1:])
-        except Exception:
+        else:
             # Add an option called default
             # This allows non-tiered commands
             # Command must implement __call__
-            real_func = self
-            return real_func(argline)
+            return self(argline)
 
 
 # Derive all commands and names from package automatically
