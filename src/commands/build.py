@@ -3,7 +3,7 @@ import os
 import time
 
 from src.commands.validate import validate_ctf_directory
-from src.challenge import Challenge, get_challenge_list, get_flag_list
+from src.challenge import Challenge, get_challenge_list, get_flag_list, make_challenges
 from src.util import EmptyConfigFileError
 
 # "Common" code
@@ -38,8 +38,19 @@ class Buildcmd(BaseCommand):
         _install_group.add_argument("--install-cron", action="store_true", help="Install ctf services as cron")
         _install_group.add_argument("--install-service", action="store_true", help="Install service challenges as services")
         _install_group.add_argument("--install-docker", action='store_true', help="Install service challenges through docker")
-        
+        parser.add_argument("--no-make",
+                            action='store_true',
+                            default=False,
+                            help="Don't run `make` on challenges with Makefiles when building")
+        parser.add_argument("--no-make-clean",
+                            action='store_true',
+                            default=False,
+                            help="Don't run `make clean` but still use make")
         args = parser.parse_args(argline)
+
+        # run make on any challenges with makefiles
+        if not args.no_make:
+            make_challenges(args.directory, args.no_make_clean)
 
         # Validate the problem set
         if any([validate_ctf_directory(dir) for dir in args.directory]):

@@ -172,6 +172,32 @@ def get_challenge_list(directory_list: List[str]) -> List[Challenge]:
     return challenges
 
 
+def make_challenges(directory_list: List[str], no_make_clean=False):
+    """For every challenge in the given packs that have Makefiles, run `make clean; make`"""
+    for challenge_pack in directory_list:
+        problem_dir = os.path.join(os.getcwd(), challenge_pack)
+        category_dirs = [dir for dir in os.listdir(problem_dir) if os.path.isdir(os.path.join(problem_dir, dir)) and not dir.startswith('.')]
+        for category in category_dirs:
+            for challenge in os.listdir(os.path.join(problem_dir, category)):
+                if os.path.isdir(f'{problem_dir}/{category}/{challenge}') and os.path.exists(f'{problem_dir}/{category}/{challenge}/Makefile'):
+                    if not no_make_clean:
+                        os.system(f'make clean -s -C "{problem_dir}/{category}/{challenge}"')
+                    os.system(f'make -s -C "{problem_dir}/{category}/{challenge}"')
+    return
+
+
+def make_clean_challenges(directory_list: List[str]):
+    """For every challenge in the given packs that have Makefiles, run `make clean`"""
+    for challenge_pack in directory_list:
+        problem_dir = os.path.join(os.getcwd(), challenge_pack)
+        category_dirs = [dir for dir in os.listdir(problem_dir) if os.path.isdir(os.path.join(problem_dir, dir)) and not dir.startswith('.')]
+        for category in category_dirs:
+            for challenge in os.listdir(os.path.join(problem_dir, category)):
+                if os.path.isdir(f'{problem_dir}/{category}/{challenge}') and os.path.exists(f'{problem_dir}/{category}/{challenge}/Makefile'):
+                    os.system(f'make clean -s -C "{problem_dir}/{category}/{challenge}"')
+    return
+
+
 def get_flag_list(challenges: List[Challenge]):
     """Builds a list of objects from challenges that dump nicely into json for CTFd """
     challenge_flag_list = []

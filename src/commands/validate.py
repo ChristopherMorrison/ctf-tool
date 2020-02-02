@@ -8,11 +8,12 @@ import zipfile
 # "Common" code
 from src.commands import BaseCommand
 from src.tui import log_error, log_success, log_warn, log_normal
+from src.challenge import make_challenges, make_clean_challenges
 
 
 class Validatecmd(BaseCommand):
     name = 'validate'
-    description = ('Validate a ')
+    description = ('Validate sets of problems')
 
     def __init__(self):
         super().__init__()
@@ -21,17 +22,30 @@ class Validatecmd(BaseCommand):
         return None
 
     def __call__(self, argline):
-        print(argline)
-        parser = argparse.ArgumentParser()
+        parser = argparse.ArgumentParser(description=self.description)
         parser.add_argument("directory", nargs="+")
-        parser.add_argument("-v", "--verbose", default=False, action='store_true')
+        parser.add_argument("-v", "--verbose",
+                            default=False,
+                            action='store_true',
+                            help='Show optional warnings')
+        parser.add_argument('--no-make',
+                            default=False,
+                            action='store_true',
+                            help="Don't run `make clean; make` for challenges with Makefiles")
         args = parser.parse_args(argline)
-        print(args)
 
+        # make clean; make
+        if not args.no_make:
+            make_challenges(args.directory)
+
+        # validate
         check_list = [validate_ctf_directory(dir, args.verbose) for dir in args.directory]
 
+        # make clean
+        if not args.no_make:
+            make_clean_challenges(args.directory)
+
         sys.exit(any(check_list))
-        pass
     
 
 def validate_ctf_directory(directory, verbose=False):
