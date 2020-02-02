@@ -17,7 +17,7 @@ def get_parser():
 
 def main():
     # Art
-    print(ascii_art)
+    #print(ascii_art)
     
     # Parser args
     parser = get_parser()
