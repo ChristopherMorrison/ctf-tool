@@ -41,6 +41,8 @@ def validate_ctf_directory(directory, verbose=False):
     categories = [folder for folder in os.listdir(directory) if os.path.isdir(f"{directory}/{folder}")]
 
     for category in categories:
+        if category.startswith('.'):
+            continue
         for challenge in os.listdir(f"{directory}/{category}"):
             dirname = f"{directory}/{category}/{challenge}"
             if os.path.isdir(dirname):            

@@ -156,7 +156,7 @@ def get_challenge_list(directory_list: List[str]) -> List[Challenge]:
     challenge_names = []
     for challenge_pack in directory_list:
         problem_dir = os.path.join(os.getcwd(), challenge_pack)
-        category_dirs = [dir for dir in os.listdir(problem_dir) if os.path.isdir(os.path.join(problem_dir, dir))]
+        category_dirs = [dir for dir in os.listdir(problem_dir) if os.path.isdir(os.path.join(problem_dir, dir)) and not dir.startswith('.')]
         for category in category_dirs:
             for challenge in os.listdir(os.path.join(problem_dir, category)):
                 if os.path.isdir(os.path.join(problem_dir, category, challenge)):
