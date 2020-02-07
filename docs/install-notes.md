@@ -1,3 +1,4 @@
+# cron / systemd install dev notes
 1. Get the list of challenges (already done with chal_host_setup.py)
 2. Vague: connnect to our challenge host machine as root
 3. For every challenge:
