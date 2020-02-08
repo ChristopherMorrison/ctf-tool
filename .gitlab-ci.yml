@@ -4,21 +4,15 @@ before_script:
     - scripts/install_required_packages.sh
     - pip3 install -r requirements.txt
 
-
 validate_challenges:
-#    stage: validate_challenges
     script:
         - ./ctf-tool.py validate challenges/* --verbose
 
-
 build_basic:
-#    stage: build_basic
     script:
         - ./ctf-tool.py build --address "ctf.cyberatuc.org" challenges/*
 
-
 install_cron:
-#    stage: build_install
     script:
         - apt install cron -y
         - ./ctf-tool.py build --install-cron --address "ctf.cyberatuc.org" challenges/test-challenge-pack/
@@ -26,12 +20,21 @@ install_cron:
         # TODO: assert correct permissions and that no extra files are added
         # TODO: note that v2 will use services which are easier to check
 
-#stages:
-#    - validate_challenges
-#    - build_basic
-#    - build_install
+install_service:
+    script:
+        - apt install cron -y
+        - ./ctf-tool.py build --install-service --address "ctf.cyberatuc.org" challenges/test-challenge-pack/
+        - ls -lR /home/
+        # TODO: assert correct permissions and that no extra files are added
+        # TODO: note that v2 will use services which are easier to check
 
-# TODO: v2 systemd service test
-# TODO: v2 docker test
-# TODO: v2 ansible package test
+install_docker:
+    script:
+        - apt install cron -y
+        - ./ctf-tool.py build --install-docker --address "ctf.cyberatuc.org" challenges/test-challenge-pack/
+        - docker ps
+        # TODO: assert correct permissions and that no extra files are added
+        # TODO: note that v2 will use services which are easier to check
+
+# TODO: v2 ansible/remote install package test
 
