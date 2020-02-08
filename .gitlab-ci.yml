@@ -43,7 +43,7 @@ build_and_install_docker:
     script:
         - docker build -t ctf-tool .
         - docker run -dit -v /var/run/docker.sock:/var/run/docker.sock --name ctf-tool ctf-tool
-        - docker exec ctf-tool "./ctf-tool.py" "build --install-docker --address 'ctf.cyberatuc.org' challenges/test-challenge-pack/"
+        - docker exec ctf-tool ./ctf-tool.py build --install-docker --address ctf.cyberatuc.org challenges/test-challenge-pack/
         - docker ps
         # TODO: assert correct permissions and that no extra files are added
 
