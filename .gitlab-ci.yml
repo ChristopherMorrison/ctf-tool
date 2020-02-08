@@ -24,6 +24,7 @@ build_basic:
 
 install_cron:
     script:
+        - apt install cron -y
         - ./ctf-tool.py build --install-cron --address "ctf.cyberatuc.org" challenges/test-challenge-pack/
         - ls -lR /home/
         # TODO: assert correct permissions and that no extra files are added
