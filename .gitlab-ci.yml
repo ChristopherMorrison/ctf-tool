@@ -14,7 +14,6 @@ build_basic:
 
 install_cron:
     script:
-        - apt install cron -y
         - ./ctf-tool.py build --install-cron --address "ctf.cyberatuc.org" challenges/test-challenge-pack/
         - ls -lR /home/
         # TODO: assert correct permissions and that no extra files are added
@@ -22,7 +21,6 @@ install_cron:
 
 install_service:
     script:
-        - apt install cron -y
         - ./ctf-tool.py build --install-service --address "ctf.cyberatuc.org" challenges/test-challenge-pack/
         - ls -lR /home/
         # TODO: assert correct permissions and that no extra files are added
@@ -30,7 +28,7 @@ install_service:
 
 install_docker:
     script:
-        - apt install cron -y
+        - systemctl start docker
         - ./ctf-tool.py build --install-docker --address "ctf.cyberatuc.org" challenges/test-challenge-pack/
         - docker ps
         # TODO: assert correct permissions and that no extra files are added
