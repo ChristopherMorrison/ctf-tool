@@ -1,12 +1,6 @@
 image: debian:10
 
 
-variables:
-    DOCKER_TLS_CERTDIR: "/certs"
-
-
-services:
-    - docker:19.03.1-dind
 
 before_script:
     - scripts/install_required_packages.sh
@@ -40,7 +34,11 @@ install_service:
 
 install_docker:
     stage: test
-    #image: docker:19.03.1
+    image: docker:19.03.1
+    variables:
+        DOCKER_TLS_CERTDIR: "/certs"
+    services:
+        - docker:19.03.1-dind
     script:
         - docker info
         - ./ctf-tool.py build --install-docker --address "ctf.cyberatuc.org" challenges/test-challenge-pack/
@@ -51,7 +49,7 @@ install_docker:
 publish_container:
     stage: publish
     script:
-        - false
+        - sh -c "false"
 
 # TODO: v2 ansible/remote install package test
 stages:
