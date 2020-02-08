@@ -1,8 +1,18 @@
 image: debian:10
 
+
+variables:
+    - DOCKER_TLS_CERTDIR: "/certs"
+
+
+services:
+    - docker:19.03.1-dind
+
+
 before_script:
     - scripts/install_required_packages.sh
     - pip3 install -r requirements.txt
+
 
 validate_challenges:
     script:
@@ -28,7 +38,7 @@ install_service:
 
 install_docker:
     script:
-        - systemctl start docker
+        - docker info
         - ./ctf-tool.py build --install-docker --address "ctf.cyberatuc.org" challenges/test-challenge-pack/
         - docker ps
         # TODO: assert correct permissions and that no extra files are added
