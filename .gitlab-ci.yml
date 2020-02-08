@@ -49,9 +49,9 @@ build_and_install_docker:
 
 
 publish_container:
-    #only:
-    #    refs:
-    #        - master
+    only:
+        refs:
+            - master
     stage: publish
     image: docker:19.03.1
     before_script:
