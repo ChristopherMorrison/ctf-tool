@@ -1,49 +1,56 @@
 image: debian:10
 
 
-variables:
-    DOCKER_TLS_CERTDIR: "/certs"
-
-
-services:
-    - docker:19.03.1-dind
-
-
 before_script:
     - scripts/install_required_packages.sh
     - pip3 install -r requirements.txt
 
 
 validate_challenges:
+    stage: test
     script:
         - ./ctf-tool.py validate challenges/* --verbose
 
 build_basic:
+    stage: test
     script:
         - ./ctf-tool.py build --address "ctf.cyberatuc.org" challenges/*
 
 install_cron:
+    stage: test
     script:
         - apt install cron -y
         - ./ctf-tool.py build --install-cron --address "ctf.cyberatuc.org" challenges/test-challenge-pack/
         - ls -lR /home/
         # TODO: assert correct permissions and that no extra files are added
-        # TODO: note that v2 will use services which are easier to check
 
 install_service:
+    stage: test
     script:
         - ./ctf-tool.py build --install-service --address "ctf.cyberatuc.org" challenges/test-challenge-pack/
         - ls -lR /home/
         # TODO: assert correct permissions and that no extra files are added
-        # TODO: note that v2 will use services which are easier to check
 
 install_docker:
+    stage: test
+    image: docker:19.03.1
+    variables:
+        DOCKER_TLS_CERTDIR: "/certs"
+    services:
+        - docker:19.03.1-dind
     script:
         - docker info
         - ./ctf-tool.py build --install-docker --address "ctf.cyberatuc.org" challenges/test-challenge-pack/
         - docker ps
         # TODO: assert correct permissions and that no extra files are added
-        # TODO: note that v2 will use services which are easier to check
+
+
+publish_container:
+    stage: publish
+    script:
+        - false
 
 # TODO: v2 ansible/remote install package test
-
+stages:
+    - test
+    - publish
