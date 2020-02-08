@@ -40,7 +40,7 @@ install_service:
 
 install_docker:
     stage: test
-    image: docker:19.03.1
+    #image: docker:19.03.1
     script:
         - docker info
         - ./ctf-tool.py build --install-docker --address "ctf.cyberatuc.org" challenges/test-challenge-pack/
@@ -57,3 +57,4 @@ publish_container:
 stages:
     - test
     - publish
+
