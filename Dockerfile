@@ -1,5 +1,5 @@
 # build me with `docker build -t cyberatuc/ctf-tool .` from the root of the repo (respects branch)
-FROM ubuntu:18.04
+FROM debian:10
 
 # Copy tool folder
 COPY . /ctf-tool/
