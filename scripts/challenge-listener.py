@@ -11,3 +11,4 @@ args = parser.parse_args()
 
 while 1:
     os.system(f"socat TCP4-LISTEN:{args.port},tcpwrap=script,reuseaddr,fork EXEC:'{args.program}',stderr,pty")
+
