@@ -12,7 +12,6 @@ import pickle
 import shlex
 import textwrap
 
-import docker
 
 # "Common" code
 from src.challenge import Challenge, get_challenge_list, get_flag_list, make_challenges
