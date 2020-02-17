@@ -1,13 +1,23 @@
 import argparse
 import os
 import time
+from typing import List
+import json
+import re
+import shutil
+import uuid
+import zipfile
+import tempfile
+import pickle
+import shlex
+import textwrap
 
-from src.commands.validate import validate_ctf_directory
-from src.challenge import Challenge, get_challenge_list, get_flag_list, make_challenges
-from src.util import EmptyConfigFileError
 
 # "Common" code
+from src.challenge import Challenge, get_challenge_list, get_flag_list, make_challenges
 from src.commands import BaseCommand
+from src.commands.validate import validate_ctf_directory
+from src.util import EmptyConfigFileError
 from src.tui import log_error, log_success, log_warn, log_normal
 
 
@@ -50,7 +60,9 @@ class Buildcmd(BaseCommand):
 
         # run make on any challenges with makefiles
         if not args.no_make:
+            log_normal("Running make on challenges")
             make_challenges(args.directory, args.no_make_clean)
+            log_success("Ran make on challenges")
 
         # Validate the problem set
         if any([validate_ctf_directory(dir) for dir in args.directory]):
@@ -64,12 +76,17 @@ class Buildcmd(BaseCommand):
         challenge_flag_list = get_flag_list(challenges)
 
         # Build file list (need to copy our files to the temp dir soon too)
-        tempdirname, tempuploaddir = make_ctfd_output_folder()
+        tempdirname, tempuploaddir, tempdbdir = make_ctfd_output_folder(args.name)
+        log_success("Created output directories")
         
         # Copy challenge files into our temp dir
         for chal in challenges:
             chal.copy_zip_file_to_temp(tempuploaddir)
+        log_success("Created CTFd uploads")
 
+        # Create CTFd database objects
+        # TODO: can this be done cleaner with sqlalchemy objects?
+        # Assign ID's to challenges (have to be unique)
         challenge_file_list = [chal.ctfd_file_list() for chal in challenges]
         challenge_file_list = [file for file in challenge_file_list if file is not None]
         for i in range(len(challenge_file_list)):
@@ -78,12 +95,11 @@ class Buildcmd(BaseCommand):
         # Installation
         # Add users to local machine (setup challenge host)
         if any([args.install_cron, args.install_service, args.install_docker]):
-            assert os.geteuid() == 0, "You must be root to install challenges!"
             for challenge in challenges:
                 challenge.requires_server_path = is_server_required(challenge.directory)
-
                 if challenge.requires_server_path is not None:
                     # Set vars for challenge objects
+                    # TODO: none of this should be setting challenge objects properties
                     challenge.username = force_valid_username(challenge.name)
                     new_user_home = os.path.join("/home/", challenge.username)
                     challenge.server_zip_path = os.path.join(os.path.split(challenge.requires_server_path)[0], "server.zip")
@@ -91,12 +107,25 @@ class Buildcmd(BaseCommand):
                     challenge.set_requires_server_string()
                     challenge.set_listener_command()
             if args.install_docker is True:
-                challenges_requiring_server = [challenge for challenge in challenges if challenge.requires_server_path is not None]
-                create_challenge_docker_env(os.getcwd(), challenges_requiring_server)
-                os.chdir("dockerenv")
-                os.system("docker-compose build && docker-compose up -d")
-                os.chdir(os.path.abspath(os.path.dirname(os.getcwd())))
+                # Make container build dirs
+                challenges_requiring_server = [challenge for challenge in challenges if challenge.requires_server_path]
+                create_challenge_docker_env(tempdirname, challenges_requiring_server)
+
+                # Create and test client
+                # TODO: will allow remote installs
+                # client = docker.client.DockerClient()
+                # assert client.ping(), "Could not connect to docker engine"
+
+                # Docker-compose build and run
+                # TODO: replace with python docker client for re-use and remote install
+                os.chdir(f"{tempdirname}/dockerenv")
+                assert os.system("docker-compose build && docker-compose up -d") == 0, "Docker Compose Failed"
+                print(os.path.abspath(os.path.dirname(os.getcwd())))
+                # TODO: bad but it needs to work soon
+                os.chdir(os.path.abspath(os.path.dirname(os.getcwd()+"/../../../")))
+                log_success("Built and started docker containers")
             else:
+                assert os.geteuid() == 0, "You must be root to install cron/service challenges!"
                 for challenge in challenges:
                     # TODO: v2 make this a factory method with something like challenge.type
                     if challenge.requires_server_path is not None:
@@ -114,15 +143,18 @@ class Buildcmd(BaseCommand):
                     print("/etc/rc.#d folders not present on current system, skipping reboot persistence")
 
         # Output CTFd jsons
-        with open(f"{tempdirname}/challenges.json", "w") as chal_json:
+        with open(f"{tempdbdir}/challenges.json", "w") as chal_json:
             _json_repr_challenges = [chal.ctfd_repr() for chal in challenges]
             json.dump(dump_to_ctfd_json(_json_repr_challenges), chal_json)
+            log_success("Created CTFd challenges table")
 
-        with open(f"{tempdirname}/files.json", "w") as files_json:
+        with open(f"{tempdbdir}/files.json", "w") as files_json:
             json.dump(dump_to_ctfd_json(challenge_file_list), files_json)
+            log_success("Created CTFd files table")
 
-        with open(f"{tempdirname}/flags.json", "w") as flags_json:
+        with open(f"{tempdbdir}/flags.json", "w") as flags_json:
             json.dump(dump_to_ctfd_json(challenge_flag_list), flags_json)
+            log_success("Created CTFd flags table")
 
         # Make CTFd config zip
         # unzip existing CTFd meta (we'll use every file that we didn't generate a version of)
@@ -130,43 +162,34 @@ class Buildcmd(BaseCommand):
         os.makedirs(temp_unzip_dir)
         base_zip = zipfile.ZipFile(os.path.join(os.getcwd(), args.basezip[0]))
         base_zip.extractall(path=temp_unzip_dir)
+        log_success("Extracted CTFd config zip")
 
         # Merge dirs
         config_files_to_copy = [f for f in os.listdir(os.path.join(temp_unzip_dir, 'db')) if
-                                f not in os.listdir(tempdirname)]
+                                f not in os.listdir(tempdbdir)]
         for f in config_files_to_copy:
-            shutil.copy2(os.path.join(temp_unzip_dir, "db", f), os.path.join(tempdirname, f))
+            shutil.copy2(os.path.join(temp_unzip_dir, "db", f), os.path.join(tempdbdir, f))
         shutil.rmtree(temp_unzip_dir)
+        log_success("Merged CTFd config zip with generated files")
 
         output_zip_name = os.path.join(os.getcwd(), "output", f"{args.name}.ctfd.{time.strftime('%Y.%m.%d-%H:%M:%S')}.zip")
-        os.system(f"cd {tempdirname}/.. && zip {output_zip_name} -r db/ uploads/*/*")
+        os.system(f"cd {tempdbdir}/.. && zip {output_zip_name} -r db/ uploads/*/*")
+        log_success(f"Created CTFd upload zip as {output_zip_name}")
 
-from typing import List
-import os
-import argparse
-import json
-import re
-import shutil
-import uuid
-import zipfile
-import time
-import tempfile
-import pickle
-import shlex
-import textwrap
 
-from src.challenge import Challenge
 # CTFd Util functions
-
-
-def make_ctfd_output_folder():
+def make_ctfd_output_folder(ctf_name):
     """ Builds a temporary output folder to copy challenge data into before zip"""
-    tempdirname = os.path.join("output", time.strftime("%Y.%m.%d-%H:%M:%S"))
-    tempuploaddir = os.path.join(tempdirname, "uploads")
-    tempdirname = os.path.join(tempdirname, "db")
+    # General
+    # TODO: prepend name here
+    tempdirname = os.path.join("output", ctf_name + time.strftime(".%Y.%m.%d-%H:%M:%S"))
+    # CTFd
+    tempuploaddir = f"{tempdirname}/ctfd/uploads"
+    tempdbdir = f"{tempdirname}/ctfd/db"
     os.makedirs(tempdirname)
     os.makedirs(tempuploaddir)
-    return tempdirname, tempuploaddir
+    os.makedirs(tempdbdir)
+    return tempdirname, tempuploaddir, tempdbdir
 
 
 def output_ctfd_csv(challenges: List[Challenge]): # TODO: unused
@@ -375,7 +398,7 @@ def create_challenge_docker_env(path, challenges):
     docker_compose_str = "version: '3.3'\nservices:\n"
     dockerenv_path = os.path.join(path, "dockerenv")
     listener_script_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                                        "..", ".."
+                                        "..", "..",
                                         "scripts",
                                         "challenge-listener.py")
     required_package_script_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
@@ -386,16 +409,16 @@ def create_challenge_docker_env(path, challenges):
     # yaml is anti tabs
     t = "    "
     for challenge in challenges:
-
         challenge_docker_path = os.path.join(dockerenv_path, challenge.username)
         os.mkdir(challenge_docker_path)
+        # TODO: needs cleaned up
         try:
             shutil.copy2(listener_script_path, challenge_docker_path)
             shutil.copy2(required_package_script_path, challenge_docker_path)
             shutil.copy2(challenge.server_zip_path, challenge_docker_path)
             shutil.copy2(challenge.requires_server_path, challenge_docker_path)
         except Exception:
-            continue
+            raise
         challenge.generate_dockerfile(challenge_docker_path)
         docker_compose_str += f"{t}{challenge.username}:\n"
         docker_compose_str += f"{t}{t}build: '{challenge.username}/.'\n"
