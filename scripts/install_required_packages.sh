@@ -3,12 +3,11 @@
 apt update
 apt-get install -y \
     docker-compose \
-    socat \
+    docker.io \
     iproute2 \
     cron \
-    zip \
-    unzip \
+    socat \
     python2.7 \
-    python3 \
-    libc6-i386 \
-    zip unzip
+    python3 python3-pip \
+    zip unzip \
+    libc6-i386
