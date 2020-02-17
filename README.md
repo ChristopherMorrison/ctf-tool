@@ -40,6 +40,10 @@ ctf-tool considers the challenge host and the ctf host to be two seperate machin
 
 *Mac:* No offical support currently, same as Windows.
 
+*Docker:* Best way yet
+```
+docker run -it --rm -v /var/run/docker.sock:/var/run/docker.sock registry.gitlab.com/cyberatuc/ctf-tool
+```
 
 ## Setup for Debian/Ubuntu machines
 1. Clone this repo
